@@ -39,12 +39,15 @@ public class RegisterEnrollUser {
 
 			// Register and Enroll user to Org1MSP
 			UserContext userContext = new UserContext();
-			String name = "user"+System.currentTimeMillis();
+			// first argument is the name
+			String name = args[0];
 			userContext.setName(name);
-			userContext.setAffiliation(Config.ORG1);
-			userContext.setMspId(Config.ORG1_MSP);
+			// second argument is the affiliation
+			userContext.setAffiliation(args[1]);
+			// third argument is msp of organization
+			userContext.setMspId(args[2]);
 
-			String eSecret = caClient.registerUser(name, Config.ORG1);
+			String eSecret = caClient.registerUser(name, args[1]);
 
 			userContext = caClient.enrollUser(userContext, eSecret);
 

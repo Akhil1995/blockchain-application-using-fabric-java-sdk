@@ -17,6 +17,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.example.client.CAClient;
 import org.example.client.ChannelClient;
@@ -25,6 +27,7 @@ import org.example.config.Config;
 import org.example.user.UserContext;
 import org.example.util.Util;
 import org.hyperledger.fabric.sdk.ChaincodeID;
+import org.hyperledger.fabric.sdk.ChaincodeResponse.Status;
 import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.Orderer;
@@ -38,7 +41,7 @@ import org.hyperledger.fabric.sdk.TransactionProposalRequest;
  *
  */
 
-public class InvokeQueryChaincode {
+public class InvokeChaincode {
 
 	private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
 	private static final String EXPECTED_EVENT_NAME = "event";
@@ -47,6 +50,11 @@ public class InvokeQueryChaincode {
 		try {
             Util.cleanUp();
 			String caUrl = Config.CA_ORG1_URL;
+			String ccName = args[0];
+			String fcnName = args[1];
+			String[] sArgs = new String[args.length-2];
+			for(int i=2;i<args.length;i++)
+				sArgs[i-2] = args[i];
 			CAClient caClient = new CAClient(caUrl, null);
 			// Enroll Admin to Org1MSP
 			UserContext adminUserContext = new UserContext();
@@ -69,38 +77,25 @@ public class InvokeQueryChaincode {
 			channel.initialize();
 
 			TransactionProposalRequest request = fabClient.getInstance().newTransactionProposalRequest();
-			ChaincodeID ccid = ChaincodeID.newBuilder().setName(Config.CHAINCODE_1_NAME).build();
+			ChaincodeID ccid = ChaincodeID.newBuilder().setName(ccName).build();
 			request.setChaincodeID(ccid);
-			request.setFcn("createCar");
-			String[] arguments = { "CAR1", "Chevy", "Volt", "Red", "Nick" };
-			request.setArgs(arguments);
+			request.setFcn(fcnName);
+			//String[] arguments = { "CAR1", "Chevy", "Volt", "Red", "Nick" };
+			request.setArgs(sArgs);
 			request.setProposalWaitTime(1000);
 
 			Map<String, byte[]> tm2 = new HashMap<>();
-			tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8)); // Just some extra junk
-																								// in transient map
-			tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8)); // ditto
-			tm2.put("result", ":)".getBytes(UTF_8)); // This should be returned see chaincode why.
-			tm2.put(EXPECTED_EVENT_NAME, EXPECTED_EVENT_DATA); // This should trigger an event see chaincode why.
+			tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8)); 																								
+			tm2.put("method", "TransactionProposalRequest".getBytes(UTF_8)); 
+			tm2.put("result", ":)".getBytes(UTF_8));
+			tm2.put(EXPECTED_EVENT_NAME, EXPECTED_EVENT_DATA); 
 			request.setTransientMap(tm2);
 			Collection<ProposalResponse> responses = channelClient.sendTransactionProposal(request);
-			
-			Thread.sleep(10000);
-			
-			Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode("fabcar", "queryAllCars", null);
-			for (ProposalResponse pres : responsesQuery) {
-				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
-				System.out.println(stringResponse);
+			for (ProposalResponse res: responses) {
+				Status status = res.getStatus();
+				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.INFO,"Invoked "+fcnName+" on "+ccName + ". Status - " + status);
 			}
-
-			Thread.sleep(10000);
-			String[] args1 = {"CAR1"};
-			Collection<ProposalResponse>  responses1Query = channelClient.queryByChainCode("fabcar", "queryCar", args1);
-			for (ProposalResponse pres : responses1Query) {
-				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
-				System.out.println(stringResponse);
-			}		
-			
+									
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

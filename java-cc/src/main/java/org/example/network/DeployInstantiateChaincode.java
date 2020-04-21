@@ -43,7 +43,10 @@ public class DeployInstantiateChaincode {
 	public static void main(String[] args) {
 		try {
 			CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
-			
+			// chaincode details should be taken from command line arguments
+			String ccName = args[0];
+			String ccLocation = args[1];
+			String ccVersion = args[2];
 			UserContext org1Admin = new UserContext();
 			File pkFolder1 = new File(Config.ORG1_USR_ADMIN_PK);
 			File[] pkFiles1 = pkFolder1.listFiles();
@@ -89,37 +92,37 @@ public class DeployInstantiateChaincode {
 			org2Peers.add(peer0_org2);
 			org2Peers.add(peer1_org2);
 			
-			Collection<ProposalResponse> response = fabClient.deployChainCode(Config.CHAINCODE_1_NAME,
-					Config.CHAINCODE_1_PATH, Config.CHAINCODE_ROOT_DIR, Type.GO_LANG.toString(),
-					Config.CHAINCODE_1_VERSION, org1Peers);
+			Collection<ProposalResponse> response = fabClient.deployChainCode(ccName,
+					ccLocation, Config.CHAINCODE_ROOT_DIR, Type.GO_LANG.toString(),
+					ccVersion, org1Peers);
 			
 			
 			for (ProposalResponse res : response) {
 				Logger.getLogger(DeployInstantiateChaincode.class.getName()).log(Level.INFO,
-						Config.CHAINCODE_1_NAME + "- Chain code deployment " + res.getStatus());
+						ccName + "- Chain code deployment " + res.getStatus());
 			}
 
 			fabClient.getInstance().setUserContext(org2Admin);
 			
-			response = fabClient.deployChainCode(Config.CHAINCODE_1_NAME,
-					Config.CHAINCODE_1_PATH, Config.CHAINCODE_ROOT_DIR, Type.GO_LANG.toString(),
-					Config.CHAINCODE_1_VERSION, org2Peers);
+			response = fabClient.deployChainCode(ccName,
+					ccLocation, Config.CHAINCODE_ROOT_DIR, Type.GO_LANG.toString(),
+					ccVersion, org2Peers);
 			
 			
 			for (ProposalResponse res : response) {
 				Logger.getLogger(DeployInstantiateChaincode.class.getName()).log(Level.INFO,
-						Config.CHAINCODE_1_NAME + "- Chain code deployment " + res.getStatus());
+						ccName + "- Chain code deployment " + res.getStatus());
 			}
 			
 			ChannelClient channelClient = new ChannelClient(mychannel.getName(), mychannel, fabClient);
 
 			String[] arguments = { "" };
-			response = channelClient.instantiateChainCode(Config.CHAINCODE_1_NAME, Config.CHAINCODE_1_VERSION,
-					Config.CHAINCODE_1_PATH, Type.GO_LANG.toString(), "init", arguments, null);
+			response = channelClient.instantiateChainCode(ccName, ccVersion,
+					ccLocation, Type.GO_LANG.toString(), "init", arguments, null);
 
 			for (ProposalResponse res : response) {
 				Logger.getLogger(DeployInstantiateChaincode.class.getName()).log(Level.INFO,
-						Config.CHAINCODE_1_NAME + "- Chain code instantiation " + res.getStatus());
+						ccName + "- Chain code instantiation " + res.getStatus());
 			}
 
 		} catch (Exception e) {
