@@ -12,6 +12,11 @@
  */
 package org.example.user;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.example.client.CAClient;
 import org.example.config.Config;
 import org.example.util.Util;
@@ -23,7 +28,7 @@ import org.example.util.Util;
  */
 
 public class RegisterEnrollUser {
-
+	public static Map<String,UserContext> userContextMap = new HashMap<String,UserContext>();
 	public static void main(String args[]) {
 		try {
 			Util.cleanUp();
@@ -48,9 +53,9 @@ public class RegisterEnrollUser {
 			userContext.setMspId(args[2]);
 
 			String eSecret = caClient.registerUser(name, args[1]);
-
+			Logger.getLogger(RegisterEnrollUser.class.getName()).log(Level.INFO, eSecret);
 			userContext = caClient.enrollUser(userContext, eSecret);
-
+			userContextMap.put(userContext.name, userContext);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

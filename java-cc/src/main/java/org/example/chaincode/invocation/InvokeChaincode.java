@@ -24,6 +24,7 @@ import org.example.client.CAClient;
 import org.example.client.ChannelClient;
 import org.example.client.FabricClient;
 import org.example.config.Config;
+import org.example.user.RegisterEnrollUser;
 import org.example.user.UserContext;
 import org.example.util.Util;
 import org.hyperledger.fabric.sdk.ChaincodeID;
@@ -34,6 +35,7 @@ import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
 import org.hyperledger.fabric.sdk.TransactionProposalRequest;
+import org.hyperledger.fabric.sdk.User;
 
 /**
  * 
@@ -55,6 +57,10 @@ public class InvokeChaincode {
 			String[] sArgs = new String[args.length-2];
 			for(int i=2;i<args.length;i++)
 				sArgs[i-2] = args[i];
+			if(!RegisterEnrollUser.userContextMap.containsKey(sArgs[0])) {
+				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE, "User not registered");
+				return;
+			}
 			CAClient caClient = new CAClient(caUrl, null);
 			// Enroll Admin to Org1MSP
 			UserContext adminUserContext = new UserContext();
@@ -78,6 +84,8 @@ public class InvokeChaincode {
 
 			TransactionProposalRequest request = fabClient.getInstance().newTransactionProposalRequest();
 			ChaincodeID ccid = ChaincodeID.newBuilder().setName(ccName).build();
+			User usercontext = RegisterEnrollUser.userContextMap.get(sArgs[0]);
+			request.setUserContext(usercontext);
 			request.setChaincodeID(ccid);
 			request.setFcn(fcnName);
 			//String[] arguments = { "CAR1", "Chevy", "Volt", "Red", "Nick" };
