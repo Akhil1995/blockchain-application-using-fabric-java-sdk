@@ -79,6 +79,7 @@ public class Util {
 	 */
 	public static UserContext readUserContext(String affiliation, String username) throws Exception {
 		String filePath = "users/" + affiliation + "/" + username + ".ser";
+		Logger.getLogger(Util.class.getName()).log(Level.INFO,filePath);
 		File file = new File(filePath);
 		if (file.exists()) {
 			// Reading the object from a file
