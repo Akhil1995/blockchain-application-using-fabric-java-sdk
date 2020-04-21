@@ -50,7 +50,7 @@ public class InvokeChaincode {
 
 	public static void main(String args[]) {
 		try {
-            Util.cleanUp();
+            //Util.cleanUp();
 			String caUrl = Config.CA_ORG1_URL;
 			String ccName = args[0];
 			String fcnName = args[1];
@@ -69,7 +69,6 @@ public class InvokeChaincode {
 			adminUserContext.setMspId(Config.ORG1_MSP);
 			caClient.setAdminUserContext(adminUserContext);
 			adminUserContext = caClient.enrollAdminUser(Config.ADMIN, Config.ADMIN_PASSWORD);
-			
 			FabricClient fabClient = new FabricClient(adminUserContext);
 			
 			ChannelClient channelClient = fabClient.createChannelClient(Config.CHANNEL_NAME);

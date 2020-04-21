@@ -45,7 +45,7 @@ public class InvokeQueryChaincode {
 
 	public static void main(String args[]) {
 		try {
-            Util.cleanUp();
+            //Util.cleanUp();
 			String caUrl = Config.CA_ORG1_URL;
 			String ccName = args[0];
 			String fcnName = args[1];

@@ -43,7 +43,7 @@ public class QueryChaincode {
 
 	public static void main(String args[]) {
 		try {
-            Util.cleanUp();
+            //Util.cleanUp();
 			String caUrl = Config.CA_ORG1_URL;
 			CAClient caClient = new CAClient(caUrl, null);
 			// Enroll Admin to Org1MSP
