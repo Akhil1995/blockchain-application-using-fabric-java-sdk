@@ -83,7 +83,11 @@ public class InvokeChaincode {
 
 			TransactionProposalRequest request = fabClient.getInstance().newTransactionProposalRequest();
 			ChaincodeID ccid = ChaincodeID.newBuilder().setName(ccName).build();
-			User usercontext = RegisterEnrollUser.userContextMap.get(sArgs[0]);
+			User usercontext = Util.readUserContext(Config.ORG1, sArgs[0]);
+			if(usercontext==null) {
+				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
+				return;
+			}
 			request.setUserContext(usercontext);
 			request.setChaincodeID(ccid);
 			request.setFcn(fcnName);
