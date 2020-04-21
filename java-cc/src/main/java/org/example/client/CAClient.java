@@ -98,6 +98,8 @@ public class CAClient {
 		UserContext userContext = Util.readUserContext(adminContext.getAffiliation(), username);
 		if (userContext != null) {
 			Logger.getLogger(CAClient.class.getName()).log(Level.WARNING, "CA -" + caUrl + " admin is already enrolled.");
+			Enrollment adminEnrollment = instance.enroll(username, password);
+			adminContext.setEnrollment(adminEnrollment);
 			return userContext;
 		}
 		Enrollment adminEnrollment = instance.enroll(username, password);
