@@ -57,10 +57,6 @@ public class InvokeChaincode {
 			String[] sArgs = new String[args.length-2];
 			for(int i=2;i<args.length;i++)
 				sArgs[i-2] = args[i];
-			if(!RegisterEnrollUser.userContextMap.containsKey(sArgs[0])) {
-				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE, "User not registered");
-				return;
-			}
 			CAClient caClient = new CAClient(caUrl, null);
 			// Enroll Admin to Org1MSP
 			UserContext adminUserContext = new UserContext();
