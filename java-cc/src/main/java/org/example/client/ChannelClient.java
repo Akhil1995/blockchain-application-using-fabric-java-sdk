@@ -118,11 +118,17 @@ public class ChannelClient {
 
 		Collection<ProposalResponse> response = channel.sendTransactionProposal(request, channel.getPeers());
 		for (ProposalResponse pres : response) {
-			String stringResponse = new String(pres.getChaincodeActionResponsePayload());
-			Logger.getLogger(ChannelClient.class.getName()).log(Level.INFO,
-					"Transaction proposal on channel " + channel.getName() + " " + pres.getMessage() + " "
-							+ pres.getStatus() + " with transaction id:" + pres.getTransactionID());
-			Logger.getLogger(ChannelClient.class.getName()).log(Level.INFO,stringResponse);
+			if(!pres.isInvalid()) {
+				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
+				Logger.getLogger(ChannelClient.class.getName()).log(Level.INFO,
+						"Transaction proposal on channel " + channel.getName() + " " + pres.getMessage() + " "
+								+ pres.getStatus() + " with transaction id:" + pres.getTransactionID());
+				Logger.getLogger(ChannelClient.class.getName()).log(Level.INFO,stringResponse);
+			}
+			else {
+				Logger.getLogger(ChannelClient.class.getName()).log(Level.SEVERE,"Status code: "+pres.getChaincodeActionResponseStatus());
+				Logger.getLogger(ChannelClient.class.getName()).log(Level.SEVERE,"Error message: "+pres.getMessage());
+			}
 		}
 
 		CompletableFuture<TransactionEvent> cf = channel.sendTransaction(response);
