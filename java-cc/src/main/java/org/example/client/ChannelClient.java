@@ -99,6 +99,7 @@ public class ChannelClient {
 		ChaincodeID ccid = ChaincodeID.newBuilder().setName(chaincodeName).build();
 		request.setUserContext(usercontext);
 		request.setFcn(functionName);
+		request.setChaincodeID(ccid);
 		if (args != null)
 			request.setArgs(args);
 
