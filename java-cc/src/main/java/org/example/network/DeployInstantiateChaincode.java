@@ -99,7 +99,7 @@ public class DeployInstantiateChaincode {
 			
 			for (ProposalResponse res : response) {
 				Logger.getLogger(DeployInstantiateChaincode.class.getName()).log(Level.INFO,
-						ccName + "- Chain code deployment " + res.getStatus());
+						ccName + "- Chain code deployment " + res.getStatus()+ " : "+res.getMessage());
 			}
 
 			fabClient.getInstance().setUserContext(org2Admin);
@@ -111,7 +111,7 @@ public class DeployInstantiateChaincode {
 			
 			for (ProposalResponse res : response) {
 				Logger.getLogger(DeployInstantiateChaincode.class.getName()).log(Level.INFO,
-						ccName + "- Chain code deployment " + res.getStatus());
+						ccName + "- Chain code deployment " + res.getStatus() + " : "+res.getMessage());
 			}
 			
 			ChannelClient channelClient = new ChannelClient(mychannel.getName(), mychannel, fabClient);
@@ -122,7 +122,7 @@ public class DeployInstantiateChaincode {
 
 			for (ProposalResponse res : response) {
 				Logger.getLogger(DeployInstantiateChaincode.class.getName()).log(Level.INFO,
-						ccName + "- Chain code instantiation " + res.getStatus());
+						ccName + "- Chain code instantiation " + res.getStatus()+ " : "+res.getMessage());
 			}
 
 		} catch (Exception e) {
