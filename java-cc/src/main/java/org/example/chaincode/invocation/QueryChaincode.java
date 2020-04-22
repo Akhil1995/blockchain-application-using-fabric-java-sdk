@@ -29,6 +29,7 @@ import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
+import org.hyperledger.fabric.sdk.TransactionInfo;
 import org.hyperledger.fabric.sdk.User;
 
 import com.google.gson.Gson;
@@ -91,12 +92,17 @@ public class QueryChaincode {
 			
 			String[] historyKeys = gson.fromJson(payload,String[].class);
 			HistoryDTO[] dtokeys = new HistoryDTO[historyKeys.length];
+			TransactionInfo[] txInfo = new TransactionInfo[historyKeys.length];
 			int iter = 0;
 			for(String x:historyKeys) {
 				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
+				txInfo[iter] = channel.queryTransactionByID(peer, dtokeys[iter].getTx_id(), usercontext);
 				System.out.println(dtokeys[iter]);
+				System.out.println(txInfo[iter]);
 				iter++;
 			}
+			
+			// build adjacency list for directed acyclic graph
 //			Thread.sleep(10000);
 //			String[] args1 = {"CAR1"};
 //			Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, "Querying for a car - " + args1[0]);
