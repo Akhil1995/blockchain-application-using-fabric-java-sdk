@@ -24,6 +24,10 @@ import org.example.client.FabricClient;
 import org.example.config.Config;
 import org.example.user.UserContext;
 import org.example.util.Util;
+import org.hyperledger.fabric.sdk.BlockInfo;
+import org.hyperledger.fabric.sdk.BlockInfo.EnvelopeInfo;
+import org.hyperledger.fabric.sdk.BlockInfo.EnvelopeType;
+import org.hyperledger.fabric.sdk.BlockInfo.TransactionEnvelopeInfo;
 import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.Orderer;
@@ -33,6 +37,7 @@ import org.hyperledger.fabric.sdk.TransactionInfo;
 import org.hyperledger.fabric.sdk.User;
 
 import com.google.gson.Gson;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * 
@@ -92,13 +97,38 @@ public class QueryChaincode {
 			
 			String[] historyKeys = gson.fromJson(payload,String[].class);
 			HistoryDTO[] dtokeys = new HistoryDTO[historyKeys.length];
-			TransactionInfo[] txInfo = new TransactionInfo[historyKeys.length];
+			BlockInfo[] txInfo = new BlockInfo[historyKeys.length];
 			int iter = 0;
 			for(String x:historyKeys) {
 				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
-				txInfo[iter] = channel.queryTransactionByID(peer, dtokeys[iter].getTx_id(), usercontext);
-				System.out.println(dtokeys[iter]);
-				System.out.println(txInfo[iter].getProcessedTransaction().getTransactionEnvelope().getPayload().toString("UTF-8"));
+				txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
+				for(EnvelopeInfo en: txInfo[iter].getEnvelopeInfos()) {
+					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID() == dtokeys[iter].getTx_id()) {
+						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+							System.out.println(actinfo.getResponseMessage());
+							actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+								try {
+									rwset.getRwset().getReadsList().forEach(read->{
+										//System.out.println(read.getAllFields());
+										System.out.println(read.getKey());
+									});
+									rwset.getRwset().getWritesList().forEach(write->{
+										//System.out.println(write.getAllFields());
+										System.out.println(write.getKey());
+										System.out.println(write.getValue());
+									});
+								} catch (InvalidProtocolBufferException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							});
+							for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
+								System.out.println(new String(actinfo.getChaincodeInputArgs(j)));
+							}
+						}
+					}
+				}
 				iter++;
 			}
 			
