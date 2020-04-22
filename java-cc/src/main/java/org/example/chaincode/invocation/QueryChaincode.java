@@ -31,6 +31,8 @@ import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
 import org.hyperledger.fabric.sdk.User;
 
+import com.google.gson.Gson;
+
 /**
  * 
  * @author Balaji Kadambi
@@ -41,7 +43,7 @@ public class QueryChaincode {
 
 	private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
 	private static final String EXPECTED_EVENT_NAME = "event";
-
+	private static Gson gson = new Gson();
 	public static void main(String args[]) {
 		try {
             //Util.cleanUp();
@@ -79,9 +81,16 @@ public class QueryChaincode {
 				return;
 			}
 			Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, fcnName, sArgs,usercontext);
+			String payload = null;
 			for (ProposalResponse pres : responsesQuery) {
 				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
+				// 
+				payload = stringResponse;
 				Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
+			}
+			HistoryDTO[] historyKeys = gson.fromJson(payload,HistoryDTO[].class);
+			for(HistoryDTO x:historyKeys) {
+				System.out.println(x);
 			}
 //			Thread.sleep(10000);
 //			String[] args1 = {"CAR1"};
