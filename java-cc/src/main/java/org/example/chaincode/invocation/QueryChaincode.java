@@ -50,6 +50,39 @@ public class QueryChaincode {
 	private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
 	private static final String EXPECTED_EVENT_NAME = "event";
 	private static Gson gson = new Gson();
+	private static void getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
+		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
+			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
+				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+				for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+					System.out.println(actinfo.getResponseMessage());
+					actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+						try {
+							System.out.println("Read set:");
+							rwset.getRwset().getReadsList().forEach(read->{
+								//System.out.println(read.getAllFields());
+								System.out.println(read.getKey());
+							});
+							rwset.getRwset().getWritesList().forEach(write->{
+								//System.out.println(write.getAllFields());'
+								System.out.println("Write set:");
+								System.out.println(write.getKey());
+								byte[] writeLen = new byte[write.getValue().size()];
+								write.getValue().copyTo(writeLen, 0);
+								System.out.println(new String(writeLen));
+							});
+						} catch (InvalidProtocolBufferException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					});
+					for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
+						System.out.println(new String(actinfo.getChaincodeInputArgs(j)));
+					}
+				}
+			}
+		}
+	}
 	public static void main(String args[]) {
 		try {
             //Util.cleanUp();
@@ -102,35 +135,7 @@ public class QueryChaincode {
 			for(String x:historyKeys) {
 				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
 				txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
-				for(EnvelopeInfo en: txInfo[iter].getEnvelopeInfos()) {
-					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(dtokeys[iter].getTx_id())) {
-						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
-							System.out.println(actinfo.getResponseMessage());
-							actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
-								try {
-									rwset.getRwset().getReadsList().forEach(read->{
-										//System.out.println(read.getAllFields());
-										System.out.println(read.getKey());
-									});
-									rwset.getRwset().getWritesList().forEach(write->{
-										//System.out.println(write.getAllFields());
-										System.out.println(write.getKey());
-										byte[] writeLen = new byte[write.getValue().size()];
-										write.getValue().copyTo(writeLen, 0);
-										System.out.println(new String(writeLen));
-									});
-								} catch (InvalidProtocolBufferException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							});
-							for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
-								System.out.println(new String(actinfo.getChaincodeInputArgs(j)));
-							}
-						}
-					}
-				}
+				getTxnInfoFromBlock(txInfo[iter], dtokeys[iter].getTx_id());
 				iter++;
 			}
 			
