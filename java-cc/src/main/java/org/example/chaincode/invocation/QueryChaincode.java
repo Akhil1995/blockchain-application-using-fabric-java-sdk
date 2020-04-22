@@ -103,8 +103,7 @@ public class QueryChaincode {
 				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
 				txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
 				for(EnvelopeInfo en: txInfo[iter].getEnvelopeInfos()) {
-					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
-						System.out.println(en.getTransactionID());
+					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(dtokeys[iter].getTx_id())) {
 						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
 						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 							System.out.println(actinfo.getResponseMessage());
@@ -117,7 +116,7 @@ public class QueryChaincode {
 									rwset.getRwset().getWritesList().forEach(write->{
 										//System.out.println(write.getAllFields());
 										System.out.println(write.getKey());
-										System.out.println(write.getValue());
+										System.out.println(write.getValue().toString());
 									});
 								} catch (InvalidProtocolBufferException e) {
 									// TODO Auto-generated catch block
