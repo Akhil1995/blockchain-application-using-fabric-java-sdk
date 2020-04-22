@@ -51,6 +51,7 @@ public class QueryChaincode {
 	private static final String EXPECTED_EVENT_NAME = "event";
 	private static Gson gson = new Gson();
 	private static void getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
+		System.out.println(blk.getBlockNumber());
 		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
