@@ -17,6 +17,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.example.client.CAClient;
 import org.example.client.ChannelClient;
@@ -31,6 +33,7 @@ import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
 import org.hyperledger.fabric.sdk.TransactionProposalRequest;
+import org.hyperledger.fabric.sdk.User;
 
 /**
  * 
@@ -91,8 +94,12 @@ public class InvokeQueryChaincode {
 			Collection<ProposalResponse> responses = channelClient.sendTransactionProposal(request);
 			
 			Thread.sleep(10000);
-			
-			Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, "queryAllCars", null);
+			User usercontext = Util.readUserContext(Config.ORG1, sArgs[0]);
+			if(usercontext==null) {
+				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
+				return;
+			}
+			Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, "queryAllCars", null,usercontext);
 			for (ProposalResponse pres : responsesQuery) {
 				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
 				System.out.println(stringResponse);
@@ -100,7 +107,7 @@ public class InvokeQueryChaincode {
 
 			Thread.sleep(10000);
 			String[] args1 = {"CAR1"};
-			Collection<ProposalResponse>  responses1Query = channelClient.queryByChainCode("fabcar", "queryCar", args1);
+			Collection<ProposalResponse>  responses1Query = channelClient.queryByChainCode("fabcar", "queryCar", args1,usercontext);
 			for (ProposalResponse pres : responses1Query) {
 				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
 				System.out.println(stringResponse);
