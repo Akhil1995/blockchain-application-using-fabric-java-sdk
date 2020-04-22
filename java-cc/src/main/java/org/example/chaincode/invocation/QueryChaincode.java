@@ -104,6 +104,7 @@ public class QueryChaincode {
 				txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
 				for(EnvelopeInfo en: txInfo[iter].getEnvelopeInfos()) {
 					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+						System.out.println(en.getTransactionID());
 						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
 						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 							System.out.println(actinfo.getResponseMessage());
