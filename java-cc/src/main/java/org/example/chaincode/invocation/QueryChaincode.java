@@ -88,9 +88,14 @@ public class QueryChaincode {
 				payload = stringResponse;
 				Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
 			}
-			HistoryDTO[] historyKeys = gson.fromJson(payload,HistoryDTO[].class);
-			for(HistoryDTO x:historyKeys) {
-				System.out.println(x);
+			
+			String[] historyKeys = gson.fromJson(payload,String[].class);
+			HistoryDTO[] dtokeys = new HistoryDTO[historyKeys.length];
+			int iter = 0;
+			for(String x:historyKeys) {
+				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
+				System.out.println(dtokeys[iter]);
+				iter++;
 			}
 //			Thread.sleep(10000);
 //			String[] args1 = {"CAR1"};
