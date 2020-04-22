@@ -103,7 +103,7 @@ public class QueryChaincode {
 				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
 				txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
 				for(EnvelopeInfo en: txInfo[iter].getEnvelopeInfos()) {
-					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID() == dtokeys[iter].getTx_id()) {
+					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
 						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 							System.out.println(actinfo.getResponseMessage());
