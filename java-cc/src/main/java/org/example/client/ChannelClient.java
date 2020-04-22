@@ -25,6 +25,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.hyperledger.fabric.sdk.BlockEvent.TransactionEvent;
+import org.example.chaincode.invocation.InvokeChaincode;
+import org.example.config.Config;
+import org.example.util.Util;
 import org.hyperledger.fabric.sdk.ChaincodeEndorsementPolicy;
 import org.hyperledger.fabric.sdk.ChaincodeID;
 import org.hyperledger.fabric.sdk.Channel;
@@ -34,6 +37,7 @@ import org.hyperledger.fabric.sdk.ProposalResponse;
 import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
 import org.hyperledger.fabric.sdk.TransactionInfo;
 import org.hyperledger.fabric.sdk.TransactionProposalRequest;
+import org.hyperledger.fabric.sdk.User;
 import org.hyperledger.fabric.sdk.TransactionRequest.Type;
 import org.hyperledger.fabric.sdk.exception.ChaincodeEndorsementPolicyParseException;
 import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
@@ -87,13 +91,13 @@ public class ChannelClient {
 	 * @throws InvalidArgumentException
 	 * @throws ProposalException
 	 */
-	public Collection<ProposalResponse> queryByChainCode(String chaincodeName, String functionName, String[] args)
+	public Collection<ProposalResponse> queryByChainCode(String chaincodeName, String functionName, String[] args,User usercontext)
 			throws InvalidArgumentException, ProposalException {
 		Logger.getLogger(ChannelClient.class.getName()).log(Level.INFO,
 				"Querying " + functionName + " on channel " + channel.getName());
 		QueryByChaincodeRequest request = fabClient.getInstance().newQueryProposalRequest();
 		ChaincodeID ccid = ChaincodeID.newBuilder().setName(chaincodeName).build();
-		request.setChaincodeID(ccid);
+		request.setUserContext(usercontext);
 		request.setFcn(functionName);
 		if (args != null)
 			request.setArgs(args);

@@ -29,6 +29,7 @@ import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
+import org.hyperledger.fabric.sdk.User;
 
 /**
  * 
@@ -70,9 +71,14 @@ public class QueryChaincode {
 			channel.addEventHub(eventHub);
 			channel.addOrderer(orderer);
 			channel.initialize();
-
+				
 			Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, "Querying chaincode ...");
-			Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, fcnName, sArgs);
+			User usercontext = Util.readUserContext(Config.ORG1, sArgs[0]);
+			if(usercontext==null) {
+				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
+				return;
+			}
+			Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, fcnName, sArgs,usercontext);
 			for (ProposalResponse pres : responsesQuery) {
 				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
 				Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
