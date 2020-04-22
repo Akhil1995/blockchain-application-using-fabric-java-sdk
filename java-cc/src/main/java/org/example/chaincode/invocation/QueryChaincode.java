@@ -116,7 +116,9 @@ public class QueryChaincode {
 									rwset.getRwset().getWritesList().forEach(write->{
 										//System.out.println(write.getAllFields());
 										System.out.println(write.getKey());
-										System.out.println(write.getValue().toString());
+										byte[] writeLen = new byte[write.getValue().size()];
+										write.getValue().copyTo(writeLen, 0);
+										System.out.println(new String(writeLen));
 									});
 								} catch (InvalidProtocolBufferException e) {
 									// TODO Auto-generated catch block
