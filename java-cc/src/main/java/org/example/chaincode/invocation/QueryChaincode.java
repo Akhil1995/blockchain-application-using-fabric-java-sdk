@@ -98,7 +98,7 @@ public class QueryChaincode {
 				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
 				txInfo[iter] = channel.queryTransactionByID(peer, dtokeys[iter].getTx_id(), usercontext);
 				System.out.println(dtokeys[iter]);
-				System.out.println(txInfo[iter]);
+				System.out.println(txInfo[iter].getProcessedTransaction().toString());
 				iter++;
 			}
 			
