@@ -14,7 +14,10 @@ package org.example.chaincode.invocation;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +29,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 import org.example.client.CAClient;
 import org.example.client.ChannelClient;
@@ -42,7 +48,6 @@ import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
-import org.hyperledger.fabric.sdk.TransactionInfo;
 import org.hyperledger.fabric.sdk.User;
 
 import com.google.gson.Gson;
@@ -59,9 +64,25 @@ public class QueryChaincode {
 	private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
 	private static final String EXPECTED_EVENT_NAME = "event";
 	private static Gson gson = new Gson();
+	public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
+    public static final String END_CERT = "-----END CERTIFICATE-----";
 	private static Map<String,TxnInfo> transactionMap = new HashMap<>();
 	// sort all transactions as according to the timestamp they were received in
 	private static Map<Long,TxnInfo> sortedMap = new TreeMap<>();
+	
+	// create certificate parser
+	private static X509Certificate parseCertificateOfEndorser(String cert) {
+		// parse this certificate
+		byte[] decodedCert = Base64.getDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
+		try {
+			X509Certificate x509 = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decodedCert));
+			return x509;
+		} catch (CertificateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 	// timestamp based approach? or block number based approach?
 	private static TxnInfo getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
 		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
@@ -258,7 +279,8 @@ public class QueryChaincode {
 				System.out.println(x.getTxn_id());
 				System.out.println("Endorsers:");
 				x.getEndorserList().forEach(end->{
-					System.out.println(new String(end.getId()));
+					X509Certificate x509 = parseCertificateOfEndorser(end.getId());
+					System.out.println(x509.getSubjectDN().getName());
 					System.out.println(new String(end.getMspid()));
 				});
 				System.out.println("Call arguments:");
