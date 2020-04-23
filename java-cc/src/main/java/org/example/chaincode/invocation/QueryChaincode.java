@@ -29,6 +29,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
+
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -77,8 +82,15 @@ public class QueryChaincode {
 		byte[] decodedCert = Base64.getMimeDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
 		try {
 			X509Certificate x509 = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decodedCert));
+			LdapName ldapDN = new LdapName(x509.getSubjectX500Principal().getName());
+			for(Rdn rdn: ldapDN.getRdns()) {
+			    System.out.println(rdn.getType() + " -> " + rdn.getValue());
+			}
 			return x509;
 		} catch (CertificateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidNameException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -281,7 +293,6 @@ public class QueryChaincode {
 				System.out.println("Endorsers:");
 				x.getEndorserList().forEach(end->{
 					X509Certificate x509 = parseCertificateOfEndorser(end.getId());
-					System.out.println(x509.getSubjectDN().getName());
 					System.out.println(new String(end.getMspid()));
 				});
 				System.out.println("Call arguments:");
