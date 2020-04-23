@@ -85,7 +85,7 @@ public class InvokeChaincode {
 				request.setUserContext(usercontext);
 			}
 			else if(sArgs[0].startsWith("Car")) {
-				request.setUserContext(Util.readUserContext(Config.ORG1, sArgs[0]));
+				request.setUserContext(Util.readUserContext(Config.ORG1, sArgs[1]));
 			}
 			request.setChaincodeID(ccid);
 			request.setFcn(fcnName);
