@@ -102,6 +102,7 @@ public class InvokeChaincode {
 			Collection<ProposalResponse> responses = channelClient.sendTransactionProposal(request);
 			for (ProposalResponse res: responses) {
 				Status status = res.getStatus();
+				System.out.println(res.getTransactionID());
 				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.INFO,"Invoked "+fcnName+" on "+ccName + ". Status - " + status);
 			}
 									
