@@ -139,6 +139,9 @@ public class QueryChaincode {
 								//System.out.println(write.getAllFields());'
 								byte[] writeLen = new byte[write.getValue().size()];
 								write.getValue().copyTo(writeLen, 0);
+								// get all dependencies, re-execute all those transactions with the current 
+								// chaincode and state values, so as to update the state and change the transaction accordingly
+								keySet.add(write.getKey());
 							});
 						} catch (InvalidProtocolBufferException e) {
 							// TODO Auto-generated catch block
