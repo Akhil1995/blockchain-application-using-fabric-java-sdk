@@ -252,11 +252,14 @@ public class QueryChaincode {
 				pollBlocksForTxns(inf, keySet);
 			}
 			System.out.println("Execution order: ");
+			List<TxnInfo> finalList = new ArrayList<>();
+			finalList.addAll(sortedMap.values());
 			sortedMap.values().forEach(x->{
 				System.out.println(x.getTxn_id());
 				System.out.println("Endorsers:");
 				x.getEndorserList().forEach(end->{
-					System.out.println(new String(end.getEndorser()));
+					System.out.println(new String(end.getId()));
+					System.out.println(new String(end.getMspid()));
 				});
 				System.out.println("Call arguments:");
 				x.getCallArgs().forEach(y->{
@@ -267,10 +270,11 @@ public class QueryChaincode {
 					System.out.println(rwset);
 				});
 			});
+			String final_json= gson.toJson(finalList);
+			System.out.println(final_json);
 			//System.out.println(transactionMap.values());
 			// order all transactions according to the given block order and timing, so as to figure out a chronological order
 			// to re-execute them
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
