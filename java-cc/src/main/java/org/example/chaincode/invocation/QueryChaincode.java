@@ -14,7 +14,15 @@ package org.example.chaincode.invocation;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,18 +58,30 @@ public class QueryChaincode {
 	private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
 	private static final String EXPECTED_EVENT_NAME = "event";
 	private static Gson gson = new Gson();
-	private static void getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
+	private static Map<String,TxnInfo> transactionMap = new HashMap<>();
+	private static TxnInfo getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
 		System.out.println(blk.getBlockNumber());
 		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
 				for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
-					System.out.println(actinfo.getResponseMessage());
+					List<String> callArgs = new ArrayList<>();
+					// add list of arguments used when the chaincode was called
+					for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
+						callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
+					}
+					TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs);
+					// get list of endorsers
+					for(int j=0;j<actinfo.getEndorsementsCount();j++)
+						txn_info.getEndorserList().add(actinfo.getEndorsementInfo(j));
 					actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
 						try {
-							System.out.println("Read set:");
+							// add all reads/writes that happened to this 
+							if(rwset.getRwset().getWritesCount() > 0 || rwset.getRwset().getReadsCount()>0)
+								txn_info.getRwsetlist().add(rwset.getRwset());
 							rwset.getRwset().getReadsList().forEach(read->{
 								//System.out.println(read.getAllFields());
+								System.out.println("Read set:");
 								System.out.println(read.getKey());
 							});
 							rwset.getRwset().getWritesList().forEach(write->{
@@ -77,12 +97,12 @@ public class QueryChaincode {
 							e.printStackTrace();
 						}
 					});
-					for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
-						System.out.println(new String(actinfo.getChaincodeInputArgs(j)));
-					}
+					transactionMap.put(tx_id, txn_info);
+					return txn_info;
 				}
 			}
 		}
+		return null;
 	}
 	public static void main(String args[]) {
 		try {
@@ -91,7 +111,8 @@ public class QueryChaincode {
 			CAClient caClient = new CAClient(caUrl, null);
 			// Enroll Admin to Org1MSP
 			String ccName = args[0];
-			String fcnName = args[1];
+			String fcnName = "query";
+			String tx_id = args[1];
 			String[] sArgs = new String[args.length-2];
 			for(int i=2;i<args.length;i++)
 				sArgs[i-2] = args[i];
@@ -113,31 +134,65 @@ public class QueryChaincode {
 			channel.addEventHub(eventHub);
 			channel.addOrderer(orderer);
 			channel.initialize();
-				
 			Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, "Querying chaincode ...");
 			User usercontext = Util.readUserContext(Config.ORG1, sArgs[0]);
+			BlockInfo tx_block = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
+			// get the keys written by this transaction...
+			getTxnInfoFromBlock(tx_block, tx_id);
+			TxnInfo first_txn = transactionMap.get(tx_id);
+			// get a list of keys for this transaction and get their history....
+			Queue<String> keyQueue = new LinkedList<>();
+			// hashset for keeping track of keys that were already queried
+			Set<String> keySet = new HashSet<>();
+			first_txn.getRwsetlist().forEach(kvrwset->{
+				kvrwset.getWritesList().forEach(write->{
+					keyQueue.offer(write.getKey());
+				});
+			});
+			while(!keyQueue.isEmpty()) {
+				String key = keyQueue.poll();
+				sArgs[1] = key;
+				keySet.add(key);
+				Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, fcnName, sArgs,usercontext);
+				String payload = null;
+				for (ProposalResponse pres : responsesQuery) {
+					String stringResponse = new String(pres.getChaincodeActionResponsePayload());
+					payload = stringResponse;
+					Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
+				}
+				String[] historyKeys = gson.fromJson(payload,String[].class);
+				HistoryDTO[] dtokeys = new HistoryDTO[historyKeys.length];
+				BlockInfo[] txInfo = new BlockInfo[historyKeys.length];
+				int iter = 0;
+				boolean checkForFirstTransaction = false;
+				for(String x:historyKeys) {
+					dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
+					// we do not need history of the key before our transaction, so query blocks only from then
+					if(checkForFirstTransaction) {
+						txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
+						TxnInfo txn = getTxnInfoFromBlock(txInfo[iter], dtokeys[iter].getTx_id());
+						if(txn != null) {
+							txn.getRwsetlist().forEach(kvrwset->{
+								kvrwset.getWritesList().forEach(kvwrite->{
+									if(!keySet.contains(kvwrite.getKey())) {
+										keyQueue.offer(kvwrite.getKey());
+										keySet.add(kvwrite.getKey());
+									}
+								});
+							});
+						}
+					}
+					else {
+						if(dtokeys[iter].getTx_id().equals(tx_id)) {
+							checkForFirstTransaction= true;
+						}
+					}
+					iter++;
+				}
+			}
 			if(usercontext==null) {
 				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
 				return;
-			}
-			Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, fcnName, sArgs,usercontext);
-			String payload = null;
-			for (ProposalResponse pres : responsesQuery) {
-				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
-				// 
-				payload = stringResponse;
-				Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
-			}
-			
-			String[] historyKeys = gson.fromJson(payload,String[].class);
-			HistoryDTO[] dtokeys = new HistoryDTO[historyKeys.length];
-			BlockInfo[] txInfo = new BlockInfo[historyKeys.length];
-			int iter = 0;
-			for(String x:historyKeys) {
-				dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
-				txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
-				getTxnInfoFromBlock(txInfo[iter], dtokeys[iter].getTx_id());
-				iter++;
 			}
 			
 			// build adjacency list for directed acyclic graph
