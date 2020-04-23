@@ -74,7 +74,7 @@ public class QueryChaincode {
 	private static X509Certificate parseCertificateOfEndorser(String cert) {
 		// parse this certificate
 		System.out.println(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
-		byte[] decodedCert = Base64.getDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
+		byte[] decodedCert = Base64.getMimeDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
 		try {
 			X509Certificate x509 = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decodedCert));
 			return x509;
