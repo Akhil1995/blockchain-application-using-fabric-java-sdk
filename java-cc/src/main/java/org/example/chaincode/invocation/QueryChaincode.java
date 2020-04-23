@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -59,11 +60,16 @@ public class QueryChaincode {
 	private static final String EXPECTED_EVENT_NAME = "event";
 	private static Gson gson = new Gson();
 	private static Map<String,TxnInfo> transactionMap = new HashMap<>();
+	// sort all transactions as according to the timestamp they were received in
+	private static Map<Long,TxnInfo> sortedMap = new TreeMap<>();
+	// timestamp based approach? or block number based approach?
 	private static TxnInfo getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
 		System.out.println(blk.getBlockNumber());
+		
 		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+				
 				for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 					List<String> callArgs = new ArrayList<>();
 					// add list of arguments used when the chaincode was called
@@ -97,6 +103,7 @@ public class QueryChaincode {
 							e.printStackTrace();
 						}
 					});
+					sortedMap.put(txn_info.getTimestamp(), txn_info);
 					transactionMap.put(tx_id, txn_info);
 					return txn_info;
 				}
@@ -177,6 +184,7 @@ public class QueryChaincode {
 						TxnInfo txn = getTxnInfoFromBlock(txInfo[iter], dtokeys[iter].getTx_id());
 						if(txn != null) {
 							txn.getRwsetlist().forEach(kvrwset->{
+								// writes list is important, because it can trigger a chain state modification
 								kvrwset.getWritesList().forEach(kvwrite->{
 									if(!keySet.contains(kvwrite.getKey())) {
 										keyQueue.offer(kvwrite.getKey());
@@ -194,8 +202,9 @@ public class QueryChaincode {
 					iter++;
 				}
 			}
-			System.out.println(transactionMap.keySet());
-			System.out.println(transactionMap.values());
+			System.out.println("Execution order: ");
+			System.out.println(sortedMap.keySet());
+			//System.out.println(transactionMap.values());
 			// order all transactions according to the given block order and timing, so as to figure out a chronological order
 			// to re-execute them
 			
