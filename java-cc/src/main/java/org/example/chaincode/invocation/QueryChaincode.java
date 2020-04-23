@@ -64,8 +64,6 @@ public class QueryChaincode {
 	private static Map<Long,TxnInfo> sortedMap = new TreeMap<>();
 	// timestamp based approach? or block number based approach?
 	private static TxnInfo getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
-		System.out.println(blk.getBlockNumber());
-		
 		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
@@ -87,16 +85,11 @@ public class QueryChaincode {
 								txn_info.getRwsetlist().add(rwset.getRwset());
 							rwset.getRwset().getReadsList().forEach(read->{
 								//System.out.println(read.getAllFields());
-								System.out.println("Read set:");
-								System.out.println(read.getKey());
 							});
 							rwset.getRwset().getWritesList().forEach(write->{
 								//System.out.println(write.getAllFields());'
-								System.out.println("Write set:");
-								System.out.println(write.getKey());
 								byte[] writeLen = new byte[write.getValue().size()];
 								write.getValue().copyTo(writeLen, 0);
-								System.out.println(new String(writeLen));
 							});
 						} catch (InvalidProtocolBufferException e) {
 							// TODO Auto-generated catch block
@@ -203,7 +196,21 @@ public class QueryChaincode {
 				}
 			}
 			System.out.println("Execution order: ");
-			System.out.println(sortedMap.keySet());
+			sortedMap.values().forEach(x->{
+				System.out.println(x.getTxn_id());
+				System.out.println("Endorsers:");
+				x.getEndorserList().forEach(end->{
+					System.out.println(new String(end.getEndorser()));
+				});
+				System.out.println("Call arguments:");
+				x.getCallArgs().forEach(y->{
+					System.out.println(y);
+				});
+				System.out.println("Read/write sets");
+				x.getRwsetlist().forEach(rwset->{
+					System.out.println(rwset);
+				});
+			});
 			//System.out.println(transactionMap.values());
 			// order all transactions according to the given block order and timing, so as to figure out a chronological order
 			// to re-execute them
