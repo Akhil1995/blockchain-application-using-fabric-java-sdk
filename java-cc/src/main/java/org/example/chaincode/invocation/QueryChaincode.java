@@ -65,7 +65,7 @@ public class QueryChaincode {
 	private static final String EXPECTED_EVENT_NAME = "event";
 	private static Gson gson = new Gson();
 	public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
-    public static final String END_CERT = "-----END CERTIFICATE-----\n";
+    public static final String END_CERT = "\n-----END CERTIFICATE-----\n";
 	private static Map<String,TxnInfo> transactionMap = new HashMap<>();
 	// sort all transactions as according to the timestamp they were received in
 	private static Map<Long,TxnInfo> sortedMap = new TreeMap<>();
