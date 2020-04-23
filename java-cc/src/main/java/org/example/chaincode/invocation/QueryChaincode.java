@@ -136,6 +136,10 @@ public class QueryChaincode {
 			channel.initialize();
 			Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, "Querying chaincode ...");
 			User usercontext = Util.readUserContext(Config.ORG1, sArgs[0]);
+			if(usercontext==null) {
+				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
+				return;
+			}
 			BlockInfo tx_block = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
 			// get the keys written by this transaction...
 			getTxnInfoFromBlock(tx_block, tx_id);
@@ -190,11 +194,7 @@ public class QueryChaincode {
 					iter++;
 				}
 			}
-			if(usercontext==null) {
-				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
-				return;
-			}
-			
+			System.out.println(transactionMap.keySet());
 			// build adjacency list for directed acyclic graph
 //			Thread.sleep(10000);
 //			String[] args1 = {"CAR1"};
