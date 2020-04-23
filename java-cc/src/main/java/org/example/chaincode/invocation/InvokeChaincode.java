@@ -89,7 +89,6 @@ public class InvokeChaincode {
 			}
 			request.setChaincodeID(ccid);
 			request.setFcn(fcnName);
-			//String[] arguments = { "CAR1", "Chevy", "Volt", "Red", "Nick" };
 			request.setArgs(sArgs);
 			request.setProposalWaitTime(1000);
 			

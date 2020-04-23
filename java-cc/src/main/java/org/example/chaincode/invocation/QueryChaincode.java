@@ -12,10 +12,7 @@
  */ 
 package org.example.chaincode.invocation;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -66,8 +63,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 public class QueryChaincode {
 
-	private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
-	private static final String EXPECTED_EVENT_NAME = "event";
 	private static Gson gson = new Gson();
 	public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
     public static final String END_CERT = "\n-----END CERTIFICATE-----\n";
@@ -76,7 +71,7 @@ public class QueryChaincode {
 	private static Map<Long,TxnInfo> sortedMap = new TreeMap<>();
 	
 	// create certificate parser
-	private static X509Certificate parseCertificateOfEndorser(String cert) {
+	private static String parseCertificateOfEndorser(String cert) {
 		// parse this certificate
 		System.out.println(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
 		byte[] decodedCert = Base64.getMimeDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
@@ -86,7 +81,7 @@ public class QueryChaincode {
 			for(Rdn rdn: ldapDN.getRdns()) {
 			    System.out.println(rdn.getType() + " -> " + rdn.getValue());
 			}
-			return x509;
+			return x509.getSubjectX500Principal().getName();
 		} catch (CertificateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -110,8 +105,11 @@ public class QueryChaincode {
 					}
 					TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs);
 					// get list of endorsers
-					for(int j=0;j<actinfo.getEndorsementsCount();j++)
-						txn_info.getEndorserList().add(actinfo.getEndorsementInfo(j));
+					for(int j=0;j<actinfo.getEndorsementsCount();j++) {
+						String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
+						if(commonName != null)
+							txn_info.getEndorserList().add(commonName);
+					}
 					actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
 						try {
 							// add all reads/writes that happened to this 
@@ -158,8 +156,11 @@ public class QueryChaincode {
 										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
 									}
 									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs);
-									for(int j=0;j<actinfo.getEndorsementsCount();j++)
-										txn_info.getEndorserList().add(actinfo.getEndorsementInfo(j));
+									for(int j=0;j<actinfo.getEndorsementsCount();j++) {
+										String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
+										if(commonName != null)
+											txn_info.getEndorserList().add(commonName);
+									}
 									try {
 										txn_info.getRwsetlist().add(rwset.getRwset());
 									} catch (InvalidProtocolBufferException e) {
@@ -292,8 +293,7 @@ public class QueryChaincode {
 				System.out.println(x.getTxn_id());
 				System.out.println("Endorsers:");
 				x.getEndorserList().forEach(end->{
-					X509Certificate x509 = parseCertificateOfEndorser(end.getId());
-					System.out.println(new String(end.getMspid()));
+					System.out.println(new String(end));
 				});
 				System.out.println("Call arguments:");
 				x.getCallArgs().forEach(y->{
