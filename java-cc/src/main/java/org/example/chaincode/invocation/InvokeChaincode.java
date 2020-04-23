@@ -84,6 +84,9 @@ public class InvokeChaincode {
 				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
 				request.setUserContext(usercontext);
 			}
+			else if(sArgs[0].startsWith("Car")) {
+				request.setUserContext(Util.readUserContext(Config.ORG1, sArgs[0]));
+			}
 			request.setChaincodeID(ccid);
 			request.setFcn(fcnName);
 			//String[] arguments = { "CAR1", "Chevy", "Volt", "Red", "Nick" };
