@@ -195,16 +195,9 @@ public class QueryChaincode {
 				}
 			}
 			System.out.println(transactionMap.keySet());
-			// build adjacency list for directed acyclic graph
-//			Thread.sleep(10000);
-//			String[] args1 = {"CAR1"};
-//			Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, "Querying for a car - " + args1[0]);
-//			
-//			Collection<ProposalResponse>  responses1Query = channelClient.queryByChainCode("fabcar", "queryCar", args1);
-//			for (ProposalResponse pres : responses1Query) {
-//				String stringResponse = new String(pres.getChaincodeActionResponsePayload());
-//				Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
-//			}		
+			System.out.println(transactionMap.values());
+			// order all transactions according to the given block order and timing, so as to figure out a chronological order
+			// to re-execute them
 			
 		} catch (Exception e) {
 			e.printStackTrace();
