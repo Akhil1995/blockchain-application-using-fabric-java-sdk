@@ -104,6 +104,51 @@ public class QueryChaincode {
 		}
 		return null;
 	}
+	private static void pollBlocksForTxns(BlockInfo blk, Set<String> keySet) {
+		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
+			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+				
+				for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+					// get list of endorsers	
+					actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+						try {
+							// add all reads/writes that happened to this 
+							if(rwset.getRwset().getWritesCount() > 0 || rwset.getRwset().getReadsCount()>0)
+							rwset.getRwset().getReadsList().forEach(read->{
+								//System.out.println(read.getAllFields());
+								if(keySet.contains(read.getKey())) {
+									List<String> callArgs = new ArrayList<>();
+									// add list of arguments used when the chaincode was called
+									for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
+										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
+									}
+									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs);
+									for(int j=0;j<actinfo.getEndorsementsCount();j++)
+										txn_info.getEndorserList().add(actinfo.getEndorsementInfo(j));
+									try {
+										txn_info.getRwsetlist().add(rwset.getRwset());
+									} catch (InvalidProtocolBufferException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+									sortedMap.put(txn_info.getTimestamp(), txn_info);
+								}
+							});
+							rwset.getRwset().getWritesList().forEach(write->{
+								//System.out.println(write.getAllFields());'
+								byte[] writeLen = new byte[write.getValue().size()];
+								write.getValue().copyTo(writeLen, 0);
+							});
+						} catch (InvalidProtocolBufferException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					});
+				}
+			}
+		}
+	}
 	public static void main(String args[]) {
 		try {
             //Util.cleanUp();
@@ -153,6 +198,7 @@ public class QueryChaincode {
 					keyQueue.offer(write.getKey());
 				});
 			});
+			long blockNumber = 0;
 			while(!keyQueue.isEmpty()) {
 				String key = keyQueue.poll();
 				sArgs[1] = key;
@@ -174,6 +220,9 @@ public class QueryChaincode {
 					// we do not need history of the key before our transaction, so query blocks only from then
 					if(checkForFirstTransaction) {
 						txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
+						if(blockNumber == 0) {
+							blockNumber = txInfo[iter].getBlockNumber();
+						}
 						TxnInfo txn = getTxnInfoFromBlock(txInfo[iter], dtokeys[iter].getTx_id());
 						if(txn != null) {
 							txn.getRwsetlist().forEach(kvrwset->{
@@ -194,6 +243,10 @@ public class QueryChaincode {
 					}
 					iter++;
 				}
+			}
+			for(long i=blockNumber;i<channel.queryBlockchainInfo().getHeight();i++) {
+				BlockInfo inf = channel.queryBlockByNumber(peer, i, usercontext);
+				pollBlocksForTxns(inf, keySet);
 			}
 			System.out.println("Execution order: ");
 			sortedMap.values().forEach(x->{
