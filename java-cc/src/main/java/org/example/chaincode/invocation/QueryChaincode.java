@@ -309,7 +309,7 @@ public class QueryChaincode {
 			
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
-			for(int i=16;i<18;i++) {
+			for(int i=14;i<18;i++) {
 				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
 				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
