@@ -27,9 +27,6 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -51,6 +48,8 @@ import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
 import org.hyperledger.fabric.sdk.User;
+import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
+import org.hyperledger.fabric.sdk.exception.ProposalException;
 
 import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -69,7 +68,10 @@ public class QueryChaincode {
 	private static Map<String,TxnInfo> transactionMap = new HashMap<>();
 	// sort all transactions as according to the timestamp they were received in
 	private static Map<Long,TxnInfo> sortedMap = new TreeMap<>();
-	
+	// write key set
+	private static Map<String,TxnWrite> writeTxnSet = new HashMap<>();
+	// read key set
+	private static Map<String,TxnRead> readTxnSet = new HashMap<>();
 	// create certificate parser
 	private static String parseCertificateOfEndorser(String cert) {
 		// parse this certificate
@@ -77,107 +79,184 @@ public class QueryChaincode {
 		byte[] decodedCert = Base64.getMimeDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
 		try {
 			X509Certificate x509 = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decodedCert));
-			LdapName ldapDN = new LdapName(x509.getSubjectX500Principal().getName());
-			for(Rdn rdn: ldapDN.getRdns()) {
-			    System.out.println(rdn.getType() + " -> " + rdn.getValue());
-			}
+			//LdapName ldapDN = new LdapName(x509.getSubjectX500Principal().getName());
+//			for(Rdn rdn: ldapDN.getRdns()) {
+//			    System.out.println(rdn.getType() + " -> " + rdn.getValue());
+//			}
 			return x509.getSubjectX500Principal().getName();
 		} catch (CertificateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (InvalidNameException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		return null;
 	}
-	// timestamp based approach? or block number based approach?
-	private static TxnInfo getTxnInfoFromBlock(BlockInfo blk,String tx_id) {
-		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
-			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
-				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-				
-				for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
-					List<String> callArgs = new ArrayList<>();
-					// add list of arguments used when the chaincode was called
-					for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
-						callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
+	private static TxnWrite getWriteCorrespondingToRead(Channel channel,Peer peer,long blockNumber,User usercontext, String key) {
+		final TxnWrite txnWrite = new TxnWrite();
+		try {
+			BlockInfo blk = channel.queryBlockByNumber(peer, blockNumber,usercontext);
+			for(EnvelopeInfo en:blk.getEnvelopeInfos()) {
+				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+						// get list of endorsers
+						actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+							try {
+								// add all reads/writes that happened to this
+								rwset.getRwset().getWritesList().forEach(write->{
+									if(write.getKey().equals(key)) {
+										byte[] writeLen = new byte[write.getValue().size()];
+										write.getValue().copyTo(writeLen, 0);
+										String writeStr = new String(writeLen);
+										txnWrite.setKey(key);
+										txnWrite.setBlockNumber(blk.getBlockNumber());
+										txnWrite.setValueWritten(writeStr);
+										writeTxnSet.put(write.getKey()+blk.getBlockNumber(),txnWrite);
+									}
+								});
+								return ;
+							} catch (InvalidProtocolBufferException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						});
 					}
-					TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs);
-					// get list of endorsers
-					for(int j=0;j<actinfo.getEndorsementsCount();j++) {
-						String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
-						if(commonName != null)
-							txn_info.getEndorserList().add(commonName);
-					}
-					actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
-						try {
-							// add all reads/writes that happened to this 
-							if(rwset.getRwset().getWritesCount() > 0 || rwset.getRwset().getReadsCount()>0)
-								txn_info.getRwsetlist().add(rwset.getRwset());
-							rwset.getRwset().getReadsList().forEach(read->{
-								//System.out.println(read.getAllFields());
-							});
-							rwset.getRwset().getWritesList().forEach(write->{
-								//System.out.println(write.getAllFields());'
-								byte[] writeLen = new byte[write.getValue().size()];
-								write.getValue().copyTo(writeLen, 0);
-							});
-						} catch (InvalidProtocolBufferException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					});
-					sortedMap.put(txn_info.getTimestamp(), txn_info);
-					transactionMap.put(tx_id, txn_info);
-					return txn_info;
 				}
 			}
+		}catch(InvalidArgumentException ex) {
+			ex.printStackTrace();
+		}catch(ProposalException ex) {
+			ex.printStackTrace();
+		}
+		return txnWrite;
+	} 
+	// timestamp based approach? or block number based approach?
+	
+	private static TxnInfo getTxnInfoFromBlock(Channel channel, User usercontext,Peer peer,String tx_id) {
+		try {
+			BlockInfo blk = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
+			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
+				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
+					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+					
+					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+						List<String> callArgs = new ArrayList<>();
+						// add list of arguments used when the chaincode was called
+						for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
+							callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
+						}
+						TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs);
+						// get list of endorsers
+						for(int j=0;j<actinfo.getEndorsementsCount();j++) {
+							String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
+							if(commonName != null)
+								txn_info.getEndorserList().add(commonName);
+						}
+						actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+							try {
+								// add all reads/writes that happened to this 
+								// big problem here is we need to know all the values that were read in a transaction
+								rwset.getRwset().getReadsList().forEach(read->{
+									// if this is not the first read
+									if(read.getVersion().getBlockNum() > 0L) {
+										TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
+										// if the value is already present in the cache, re use it
+										if(writeTxnSet.containsKey( txnRead.getKey()+txnRead.getBlockNumber())) {
+											txnRead.setValueRead(writeTxnSet.get(txnRead.getKey()+txnRead.getBlockNumber()).getValueWritten());
+										}
+										// Else, fetch the written value from the version block
+										else {
+											TxnWrite txnW= getWriteCorrespondingToRead(channel, peer, txnRead.getBlockNumber(), usercontext, read.getKey());
+											writeTxnSet.put(txnW.getKey()+txnW.getBlockNumber(),txnW);
+											txnRead.setValueRead(txnW.getValueWritten());
+										}
+										txn_info.getReadlist().add(txnRead);
+									}
+								});
+								rwset.getRwset().getWritesList().forEach(write->{
+									byte[] writeLen = new byte[write.getValue().size()];
+									write.getValue().copyTo(writeLen, 0);
+									String writeStr = new String(writeLen);
+									TxnWrite txnWrite = new TxnWrite(write.getKey(),blk.getBlockNumber());
+									txnWrite.setValueWritten(writeStr);
+									writeTxnSet.put(write.getKey()+blk.getBlockNumber(),txnWrite);
+								});
+							} catch (InvalidProtocolBufferException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						});
+						sortedMap.put(txn_info.getTimestamp(), txn_info);
+						transactionMap.put(tx_id, txn_info);
+						return txn_info;
+					}
+				}
+			}
+		}catch(InvalidArgumentException ex) {
+			ex.printStackTrace();
+		}catch(ProposalException ex) {
+			ex.printStackTrace();
 		}
 		return null;
 	}
-	private static void pollBlocksForTxns(BlockInfo blk, Set<String> keySet) {
+	private static void pollBlocksForTxns(BlockInfo blk, Set<String> keySet,Channel channel,Peer peer,User usercontext) {
 		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-				
 				for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 					// get list of endorsers	
 					actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
 						try {
-							// add all reads/writes that happened to this 
-							if(rwset.getRwset().getWritesCount() > 0 || rwset.getRwset().getReadsCount()>0)
-							rwset.getRwset().getReadsList().forEach(read->{
-								//System.out.println(read.getAllFields());
-								if(keySet.contains(read.getKey())) {
-									List<String> callArgs = new ArrayList<>();
-									// add list of arguments used when the chaincode was called
-									for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
-										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
+							// add all reads/writes that happened to this
+							boolean check = false;
+							if(rwset.getRwset().getWritesCount() > 0 || rwset.getRwset().getReadsCount()>0) {
+								for(int x =0;x<rwset.getRwset().getReadsCount();x++) {
+									if(keySet.contains(rwset.getRwset().getReads(x).getKey())) {
+										check = true;
 									}
-									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs);
-									for(int j=0;j<actinfo.getEndorsementsCount();j++) {
-										String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
-										if(commonName != null)
-											txn_info.getEndorserList().add(commonName);
-									}
-									try {
-										txn_info.getRwsetlist().add(rwset.getRwset());
-									} catch (InvalidProtocolBufferException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
-									sortedMap.put(txn_info.getTimestamp(), txn_info);
 								}
-							});
-							rwset.getRwset().getWritesList().forEach(write->{
-								//System.out.println(write.getAllFields());'
-								byte[] writeLen = new byte[write.getValue().size()];
-								write.getValue().copyTo(writeLen, 0);
-								// get all dependencies, re-execute all those transactions with the current 
-								// chaincode and state values, so as to update the state and change the transaction accordingly
-								keySet.add(write.getKey());
-							});
+							}
+							if(check) {
+								List<String> callArgs = new ArrayList<>();
+								// add list of arguments used when the chaincode was called
+								for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
+									callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
+								}
+								TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs);
+								for(int j=0;j<actinfo.getEndorsementsCount();j++) {
+									String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
+									if(commonName != null)
+										txn_info.getEndorserList().add(commonName);
+								}
+								rwset.getRwset().getReadsList().forEach(x->{
+									// if this is not the first read
+									if(x.getVersion().getBlockNum() > 0L) {
+										TxnRead txnRead = new TxnRead(x.getKey(),x.getVersion().getBlockNum());
+										// if the value is already present in the cache, re use it
+										if(writeTxnSet.containsKey( txnRead.getKey()+txnRead.getBlockNumber())) {
+											txnRead.setValueRead(writeTxnSet.get(txnRead.getKey()+txnRead.getBlockNumber()).getValueWritten());
+										}
+										// Else, fetch the written value from the version block
+										else {
+											TxnWrite txnW= getWriteCorrespondingToRead(channel, peer, txnRead.getBlockNumber(), usercontext, x.getKey());
+											writeTxnSet.put(txnW.getKey()+txnW.getBlockNumber(),txnW);
+											txnRead.setValueRead(txnW.getValueWritten());
+										}
+										txn_info.getReadlist().add(txnRead);
+									}
+								});
+								rwset.getRwset().getWritesList().forEach(write->{
+									//System.out.println(write.getAllFields());'
+									byte[] writeLen = new byte[write.getValue().size()];
+									write.getValue().copyTo(writeLen, 0);
+									// get all dependencies, re-execute all those transactions with the current 
+									// chaincode and state values, so as to update the state and change the transaction accordingly
+									keySet.add(write.getKey());
+									TxnWrite txnW = new TxnWrite(write.getKey(),blk.getBlockNumber());
+									txnW.setValueWritten(new String(writeLen));
+									writeTxnSet.put(write.getKey()+blk.getBlockNumber(),txnW);
+								});
+								sortedMap.put(txn_info.getTimestamp(), txn_info);
+							}
 						} catch (InvalidProtocolBufferException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -225,16 +304,15 @@ public class QueryChaincode {
 			}
 			BlockInfo tx_block = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
 			// get the keys written by this transaction...
-			getTxnInfoFromBlock(tx_block, tx_id);
+			getTxnInfoFromBlock(channel,usercontext,peer, tx_id);
 			TxnInfo first_txn = transactionMap.get(tx_id);
+			
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
 			// hashset for keeping track of keys that were already queried
 			Set<String> keySet = new HashSet<>();
-			first_txn.getRwsetlist().forEach(kvrwset->{
-				kvrwset.getWritesList().forEach(write->{
-					keyQueue.offer(write.getKey());
-				});
+			first_txn.getWritelist().forEach(write->{
+				keyQueue.offer(write.getKey());
 			});
 			long blockNumber = 0;
 			while(!keyQueue.isEmpty()) {
@@ -261,16 +339,14 @@ public class QueryChaincode {
 						if(blockNumber == 0) {
 							blockNumber = txInfo[iter].getBlockNumber();
 						}
-						TxnInfo txn = getTxnInfoFromBlock(txInfo[iter], dtokeys[iter].getTx_id());
+						TxnInfo txn = getTxnInfoFromBlock(channel,usercontext,peer, dtokeys[iter].getTx_id());
 						if(txn != null) {
-							txn.getRwsetlist().forEach(kvrwset->{
+							txn.getWritelist().forEach(ws->{
 								// writes list is important, because it can trigger a chain state modification
-								kvrwset.getWritesList().forEach(kvwrite->{
-									if(!keySet.contains(kvwrite.getKey())) {
-										keyQueue.offer(kvwrite.getKey());
-										keySet.add(kvwrite.getKey());
-									}
-								});
+								if(!keySet.contains(ws.getKey())) {
+									keyQueue.offer(ws.getKey());
+									keySet.add(ws.getKey());
+								}
 							});
 						}
 					}
@@ -284,25 +360,22 @@ public class QueryChaincode {
 			}
 			for(long i=blockNumber;i<channel.queryBlockchainInfo().getHeight();i++) {
 				BlockInfo inf = channel.queryBlockByNumber(peer, i, usercontext);
-				pollBlocksForTxns(inf, keySet);
+				pollBlocksForTxns(inf, keySet,channel,peer,usercontext);
 			}
 			System.out.println("Execution order: ");
 			List<TxnInfo> finalList = new ArrayList<>();
 			finalList.addAll(sortedMap.values());
 			sortedMap.values().forEach(x->{
-				System.out.println(x.getTxn_id());
-				System.out.println("Endorsers:");
+				//System.out.println(x.getTxn_id());
+				//System.out.println("Endorsers:");
 				x.getEndorserList().forEach(end->{
 					System.out.println(new String(end));
 				});
-				System.out.println("Call arguments:");
+				//System.out.println("Call arguments:");
 				x.getCallArgs().forEach(y->{
-					System.out.println(y);
+					//System.out.println(y);
 				});
-				System.out.println("Read/write sets");
-				x.getRwsetlist().forEach(rwset->{
-					System.out.println(rwset);
-				});
+				//System.out.println("Read/write sets");
 			});
 			String final_json= gson.toJson(finalList);
 			System.out.println(final_json);
