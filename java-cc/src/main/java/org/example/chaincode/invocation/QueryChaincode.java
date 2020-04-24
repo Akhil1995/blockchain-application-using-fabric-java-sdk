@@ -178,6 +178,7 @@ public class QueryChaincode {
 									String writeStr = new String(writeLen);
 									TxnWrite txnWrite = new TxnWrite(write.getKey(),blk.getBlockNumber());
 									txnWrite.setValueWritten(writeStr);
+									txn_info.getWritelist().add(txnWrite);
 									writeTxnSet.put(write.getKey()+blk.getBlockNumber(),txnWrite);
 								});
 							} catch (InvalidProtocolBufferException e) {
@@ -253,6 +254,7 @@ public class QueryChaincode {
 									keySet.add(write.getKey());
 									TxnWrite txnW = new TxnWrite(write.getKey(),blk.getBlockNumber());
 									txnW.setValueWritten(new String(writeLen));
+									txn_info.getWritelist().add(txnW);
 									writeTxnSet.put(write.getKey()+blk.getBlockNumber(),txnW);
 								});
 								sortedMap.put(txn_info.getTimestamp(), txn_info);
@@ -379,6 +381,7 @@ public class QueryChaincode {
 			});
 			String final_json= gson.toJson(finalList);
 			System.out.println(final_json);
+			System.out.println(writeTxnSet);
 			//System.out.println(transactionMap.values());
 			// order all transactions according to the given block order and timing, so as to figure out a chronological order
 			// to re-execute them
