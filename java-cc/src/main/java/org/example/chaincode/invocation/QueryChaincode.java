@@ -309,12 +309,11 @@ public class QueryChaincode {
 			
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
-			for(int i=0;i<6;i++) {
+			for(int i=16;i<18;i++) {
 				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
 				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-						System.out.println(txenin.getTransactionID());
 						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 							// get list of endorsers	
 							actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
