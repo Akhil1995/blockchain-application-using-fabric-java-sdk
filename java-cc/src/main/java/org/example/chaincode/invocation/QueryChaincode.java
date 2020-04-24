@@ -75,7 +75,6 @@ public class QueryChaincode {
 	// create certificate parser
 	private static String parseCertificateOfEndorser(String cert) {
 		// parse this certificate
-		System.out.println(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
 		byte[] decodedCert = Base64.getMimeDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
 		try {
 			X509Certificate x509 = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decodedCert));
@@ -304,13 +303,51 @@ public class QueryChaincode {
 				Logger.getLogger(InvokeChaincode.class.getName()).log(Level.SEVERE,"User not registered");
 				return;
 			}
-			BlockInfo tx_block = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
 			// get the keys written by this transaction...
 			getTxnInfoFromBlock(channel,usercontext,peer, tx_id);
 			TxnInfo first_txn = transactionMap.get(tx_id);
 			
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
+			for(int i=0;i<6;i++) {
+				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
+				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
+					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+						System.out.println(txenin.getTransactionID());
+						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+							// get list of endorsers	
+							actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+								try {
+									// add all reads/writes that happened to this
+									List<String> callArgs = new ArrayList<>();
+									// add list of arguments used when the chaincode was called
+									for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
+										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
+									}
+									System.out.println(args);
+									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs);
+									rwset.getRwset().getReadsList().forEach(x->{
+										// if this is not the first read
+										System.out.println(x);
+									});
+									rwset.getRwset().getWritesList().forEach(write->{
+										//System.out.println(write.getAllFields());'
+										byte[] writeLen = new byte[write.getValue().size()];
+										write.getValue().copyTo(writeLen, 0);
+										// get all dependencies, re-execute all those transactions with the current 
+										// chaincode and state values, so as to update the state and change the transaction accordingly
+										System.out.println(new String(writeLen));
+									});
+								} catch (InvalidProtocolBufferException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							});
+						}
+					}
+				}
+			}
 			// hashset for keeping track of keys that were already queried
 			Set<String> keySet = new HashSet<>();
 			first_txn.getWritelist().forEach(write->{
@@ -371,7 +408,7 @@ public class QueryChaincode {
 				//System.out.println(x.getTxn_id());
 				//System.out.println("Endorsers:");
 				x.getEndorserList().forEach(end->{
-					System.out.println(new String(end));
+					//System.out.println(new String(end));
 				});
 				//System.out.println("Call arguments:");
 				x.getCallArgs().forEach(y->{
