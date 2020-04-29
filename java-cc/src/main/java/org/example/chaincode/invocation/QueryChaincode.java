@@ -156,7 +156,7 @@ public class QueryChaincode {
 								// add all reads/writes that happened to this 
 								// big problem here is we need to know all the values that were read in a transaction
 								System.out.println(rwset.getRwset().getAllFields());
-								System.out.println(rwset.getRwset().getRangeQueriesInfo(0).getAllFields());
+								//System.out.println(rwset.getRwset().getRangeQueriesInfo(0).getAllFields());
 								System.out.println(rwset.getRwset().getMetadataWritesList());
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
