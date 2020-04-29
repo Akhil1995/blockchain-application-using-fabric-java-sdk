@@ -155,12 +155,12 @@ public class QueryChaincode {
 							try {
 								// add all reads/writes that happened to this 
 								// big problem here is we need to know all the values that were read in a transaction
-								System.out.println(rwset.getRwset().getAllFields());
+								//System.out.println(rwset.getRwset().getAllFields());
 								//System.out.println(rwset.getRwset().getRangeQueriesInfo(0).getAllFields());
-								System.out.println(rwset.getRwset().getMetadataWritesList());
+								//System.out.println(rwset.getRwset().getMetadataWritesList());
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
-									System.out.println(read.getAllFields());
+									//System.out.println(read.getAllFields());
 									if(read.getVersion().getBlockNum() > 0L) {
 										TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
 										// if the value is already present in the cache, re use it
