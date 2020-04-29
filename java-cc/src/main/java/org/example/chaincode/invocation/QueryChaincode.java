@@ -138,10 +138,10 @@ public class QueryChaincode {
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-					System.out.println(txenin);
-					System.out.println(gson.toJson(txenin));
 					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 						List<String> callArgs = new ArrayList<>();
+						System.out.println(txenin);
+						System.out.println(gson.toJson(actinfo));
 						// add list of arguments used when the chaincode was called
 						for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
 							callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
