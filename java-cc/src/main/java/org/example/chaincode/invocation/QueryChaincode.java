@@ -305,50 +305,50 @@ public class QueryChaincode {
 				return;
 			}
 			// get the keys written by this transaction...
-			getTxnInfoFromBlock(channel,usercontext,peer, tx_id);
+			System.out.println(getTxnInfoFromBlock(channel,usercontext,peer, tx_id));
 			TxnInfo first_txn = transactionMap.get(tx_id);
 			
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
-			for(int i=0;i<4;i++) {
-				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
-				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
-					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
-						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
-							// get list of endorsers	
-							actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
-								try {
-									// add all reads/writes that happened to this
-									List<String> callArgs = new ArrayList<>();
-									// add list of arguments used when the chaincode was called
-									for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
-										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
-									}
-									System.out.println(args);
-									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
-									rwset.getRwset().getReadsList().forEach(x->{
-										// if this is not the first read
-										System.out.println(x);
-									});
-									rwset.getRwset().getWritesList().forEach(write->{
-										//System.out.println(write.getAllFields());'
-										byte[] writeLen = new byte[write.getValue().size()];
-										write.getValue().copyTo(writeLen, 0);
-										// get all dependencies, re-execute all those transactions with the current 
-										// chaincode and state values, so as to update the state and change the transaction accordingly
-										String newStr= new String(writeLen);
-										System.out.println();
-									});
-								} catch (InvalidProtocolBufferException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							});
-						}
-					}
-				}
-			}
+//			for(int i=0;i<4;i++) {
+//				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
+//				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
+//					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+//						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+//						for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+//							// get list of endorsers	
+//							actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+//								try {
+//									// add all reads/writes that happened to this
+//									List<String> callArgs = new ArrayList<>();
+//									// add list of arguments used when the chaincode was called
+//									for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
+//										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
+//									}
+//									System.out.println(args);
+//									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
+//									rwset.getRwset().getReadsList().forEach(x->{
+//										// if this is not the first read
+//										System.out.println(x);
+//									});
+//									rwset.getRwset().getWritesList().forEach(write->{
+//										//System.out.println(write.getAllFields());'
+//										byte[] writeLen = new byte[write.getValue().size()];
+//										write.getValue().copyTo(writeLen, 0);
+//										// get all dependencies, re-execute all those transactions with the current 
+//										// chaincode and state values, so as to update the state and change the transaction accordingly
+//										String newStr= new String(writeLen);
+//										System.out.println();
+//									});
+//								} catch (InvalidProtocolBufferException e) {
+//									// TODO Auto-generated catch block
+//									e.printStackTrace();
+//								}
+//							});
+//						}
+//					}
+//				}
+//			}
 			// hashset for keeping track of keys that were already queried
 			Set<String> keySet = new HashSet<>();
 			first_txn.getWritelist().forEach(write->{
