@@ -3,9 +3,6 @@ package org.example.chaincode.invocation;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.hyperledger.fabric.protos.ledger.rwset.kvrwset.KvRwset.KVRWSet;
-import org.hyperledger.fabric.sdk.BlockInfo.EndorserInfo;
-
 public class TxnInfo {
 	private String txn_id;
 	private long timestamp;
@@ -13,8 +10,17 @@ public class TxnInfo {
 	private List<TxnWrite> writelist;
 	private List<String> callArgs;
 	private List<String> endorserList;
+	private String chaincode;
 	
-	public TxnInfo(String txn_id, long timestamp, List<String> args) {
+	public String getChaincode() {
+		return chaincode;
+	}
+
+	public void setChaincode(String chaincode) {
+		this.chaincode = chaincode;
+	}
+
+	public TxnInfo(String txn_id, long timestamp, List<String> args,String chaincode) {
 		this.txn_id = txn_id;
 		this.timestamp = timestamp;
 		this.readlist = new ArrayList<>();
@@ -22,6 +28,7 @@ public class TxnInfo {
 		this.callArgs = new ArrayList<String>();
 		this.callArgs.addAll(args);
 		this.endorserList = new ArrayList<>();
+		this.chaincode = chaincode;
 	}
 
 	public String getTxn_id() {

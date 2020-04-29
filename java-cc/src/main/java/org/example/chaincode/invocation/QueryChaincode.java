@@ -131,20 +131,20 @@ public class QueryChaincode {
 	} 
 	// timestamp based approach? or block number based approach?
 	
-	private static TxnInfo getTxnInfoFromBlock(Channel channel, User usercontext,Peer peer,String tx_id) {
+	private static List<TxnInfo> getTxnInfoFromBlock(Channel channel, User usercontext,Peer peer,String tx_id) {
+		List<TxnInfo> listOfTransactions = new ArrayList<>();
 		try {
 			BlockInfo blk = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-					
 					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 						List<String> callArgs = new ArrayList<>();
 						// add list of arguments used when the chaincode was called
 						for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
 							callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
 						}
-						TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs);
+						TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
 						// get list of endorsers
 						for(int j=0;j<actinfo.getEndorsementsCount();j++) {
 							String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
@@ -188,7 +188,7 @@ public class QueryChaincode {
 						});
 						sortedMap.put(txn_info.getTimestamp(), txn_info);
 						transactionMap.put(tx_id, txn_info);
-						return txn_info;
+						listOfTransactions.add(txn_info);
 					}
 				}
 			}
@@ -197,14 +197,14 @@ public class QueryChaincode {
 		}catch(ProposalException ex) {
 			ex.printStackTrace();
 		}
-		return null;
+		return listOfTransactions;
 	}
 	private static void pollBlocksForTxns(BlockInfo blk, Set<String> keySet,Channel channel,Peer peer,User usercontext) {
 		for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 			if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 				TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
 				for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
-					// get list of endorsers	
+					// get list of endorsers
 					actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
 						try {
 							// add all reads/writes that happened to this
@@ -222,7 +222,7 @@ public class QueryChaincode {
 								for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
 									callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
 								}
-								TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs);
+								TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
 								for(int j=0;j<actinfo.getEndorsementsCount();j++) {
 									String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
 									if(commonName != null)
@@ -326,7 +326,7 @@ public class QueryChaincode {
 										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
 									}
 									System.out.println(args);
-									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs);
+									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
 									rwset.getRwset().getReadsList().forEach(x->{
 										// if this is not the first read
 										System.out.println(x);
@@ -379,15 +379,15 @@ public class QueryChaincode {
 						if(blockNumber == 0) {
 							blockNumber = txInfo[iter].getBlockNumber();
 						}
-						TxnInfo txn = getTxnInfoFromBlock(channel,usercontext,peer, dtokeys[iter].getTx_id());
-						if(txn != null) {
-							txn.getWritelist().forEach(ws->{
+						List<TxnInfo> txnList = getTxnInfoFromBlock(channel,usercontext,peer, dtokeys[iter].getTx_id());
+						if(!txnList.isEmpty()) {
+							txnList.forEach(txn->txn.getWritelist().forEach(ws->{
 								// writes list is important, because it can trigger a chain state modification
 								if(!keySet.contains(ws.getKey())) {
 									keyQueue.offer(ws.getKey());
 									keySet.add(ws.getKey());
 								}
-							});
+							}));
 						}
 					}
 					else {
