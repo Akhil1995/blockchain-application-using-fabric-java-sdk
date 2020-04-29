@@ -107,6 +107,7 @@ public class QueryChaincode {
 									if(write.getKey().equals(key)) {
 										byte[] writeLen = new byte[write.getValue().size()];
 										write.getValue().copyTo(writeLen, 0);
+										txnWrite.setChaincode(actinfo.getChaincodeIDName());
 										String writeStr = new String(writeLen);
 										txnWrite.setKey(key);
 										txnWrite.setBlockNumber(blk.getBlockNumber());
@@ -136,7 +137,7 @@ public class QueryChaincode {
 		List<TxnInfo> listOfTransactions = new ArrayList<>();
 		try {
 			BlockInfo blk = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
-			System.out.println(channel.queryTransactionByID(peer, tx_id).getProcessedTransaction().getAllFields());
+			QueryByChaincodeRequest q = QueryByChaincodeRequest.newInstance(usercontext);
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
@@ -162,8 +163,6 @@ public class QueryChaincode {
 								//System.out.println(rwset.getRwset().getMetadataWritesList());
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
-									System.out.println(read.getAllFields());
-									
 									if(read.getVersion().getBlockNum() > 0L) {
 										TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
 										// if the value is already present in the cache, re use it
@@ -315,7 +314,28 @@ public class QueryChaincode {
 			// get the keys written by this transaction...
 			System.out.println(getTxnInfoFromBlock(channel,usercontext,peer, tx_id));
 			TxnInfo first_txn = transactionMap.get(tx_id);
-			
+			QueryByChaincodeRequest q = QueryByChaincodeRequest.newInstance(usercontext);
+			q.setChaincodeName("sacc");
+			channel.queryByChaincode(q).forEach(x->{
+				try {
+					x.getChaincodeActionResponseReadWriteSetInfo().getNsRwsetInfos().forEach(y->{
+						try {
+							y.getRwset().getReadsList().forEach(z->{
+								System.out.println(z);
+							});
+							y.getRwset().getWritesList().forEach(z->{
+								System.out.println(z);
+							});
+						} catch (InvalidProtocolBufferException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					});
+				} catch (InvalidArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			});
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
 //			for(int i=0;i<4;i++) {
