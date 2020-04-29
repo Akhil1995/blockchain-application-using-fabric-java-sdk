@@ -140,8 +140,6 @@ public class QueryChaincode {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
 					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 						List<String> callArgs = new ArrayList<>();
-						System.out.println(txenin);
-						System.out.println(gson.toJson(actinfo));
 						// add list of arguments used when the chaincode was called
 						for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
 							callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
@@ -157,8 +155,12 @@ public class QueryChaincode {
 							try {
 								// add all reads/writes that happened to this 
 								// big problem here is we need to know all the values that were read in a transaction
+								System.out.println(rwset.getRwset().getAllFields());
+								System.out.println(rwset.getRwset().getRangeQueriesInfo(0).getAllFields());
+								System.out.println(rwset.getRwset().getMetadataWritesList());
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
+									System.out.println(read.getAllFields());
 									if(read.getVersion().getBlockNum() > 0L) {
 										TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
 										// if the value is already present in the cache, re use it
@@ -175,8 +177,7 @@ public class QueryChaincode {
 									}
 								});
 								rwset.getRwset().getWritesList().forEach(write->{
-									System.out.println(write);
-									System.out.println(gson.toJson(write));
+									System.out.println(write.getAllFields());
 									byte[] writeLen = new byte[write.getValue().size()];
 									write.getValue().copyTo(writeLen, 0);
 									String writeStr = new String(writeLen);
