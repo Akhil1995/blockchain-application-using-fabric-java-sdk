@@ -138,6 +138,8 @@ public class QueryChaincode {
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+					System.out.println(txenin);
+					System.out.println(gson.toJson(txenin));
 					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 						List<String> callArgs = new ArrayList<>();
 						// add list of arguments used when the chaincode was called
@@ -173,6 +175,8 @@ public class QueryChaincode {
 									}
 								});
 								rwset.getRwset().getWritesList().forEach(write->{
+									System.out.println(write);
+									System.out.println(gson.toJson(write));
 									byte[] writeLen = new byte[write.getValue().size()];
 									write.getValue().copyTo(writeLen, 0);
 									String writeStr = new String(writeLen);
