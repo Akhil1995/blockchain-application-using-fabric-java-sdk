@@ -48,6 +48,7 @@ import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
+import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
 import org.hyperledger.fabric.sdk.User;
 import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
 import org.hyperledger.fabric.sdk.exception.ProposalException;
@@ -135,6 +136,7 @@ public class QueryChaincode {
 		List<TxnInfo> listOfTransactions = new ArrayList<>();
 		try {
 			BlockInfo blk = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
+			System.out.println(channel.queryTransactionByID(peer, tx_id).getProcessedTransaction().getAllFields());
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
