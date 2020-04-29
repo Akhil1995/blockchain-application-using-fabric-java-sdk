@@ -14,6 +14,7 @@ package org.example.chaincode.invocation;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -309,7 +310,7 @@ public class QueryChaincode {
 			
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
-			for(int i=14;i<18;i++) {
+			for(int i=0;i<4;i++) {
 				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
 				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
@@ -337,7 +338,7 @@ public class QueryChaincode {
 										// get all dependencies, re-execute all those transactions with the current 
 										// chaincode and state values, so as to update the state and change the transaction accordingly
 										String newStr= new String(writeLen);
-										System.out.println(newStr);
+										System.out.println();
 									});
 								} catch (InvalidProtocolBufferException e) {
 									// TODO Auto-generated catch block
