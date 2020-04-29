@@ -160,7 +160,8 @@ public class QueryChaincode {
 								//System.out.println(rwset.getRwset().getMetadataWritesList());
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
-									//System.out.println(read.getAllFields());
+									System.out.println(read.getAllFields());
+									
 									if(read.getVersion().getBlockNum() > 0L) {
 										TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
 										// if the value is already present in the cache, re use it
