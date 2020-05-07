@@ -40,7 +40,6 @@ public class CreateChannel {
 	public static void main(String[] args) {
 		try {
 			CryptoSuite.Factory.getCryptoSuite();
-			Util.cleanUp();
 			// Construct Channel
 			UserContext org1Admin = new UserContext();
 			File pkFolder1 = new File(Config.ORG1_USR_ADMIN_PK);

@@ -314,28 +314,6 @@ public class QueryChaincode {
 			// get the keys written by this transaction...
 			System.out.println(getTxnInfoFromBlock(channel,usercontext,peer, tx_id));
 			TxnInfo first_txn = transactionMap.get(tx_id);
-			QueryByChaincodeRequest q = QueryByChaincodeRequest.newInstance(usercontext);
-			q.setChaincodeName("sacc");
-			channel.queryByChaincode(q).forEach(x->{
-				try {
-					x.getChaincodeActionResponseReadWriteSetInfo().getNsRwsetInfos().forEach(y->{
-						try {
-							y.getRwset().getReadsList().forEach(z->{
-								System.out.println(z);
-							});
-							y.getRwset().getWritesList().forEach(z->{
-								System.out.println(z);
-							});
-						} catch (InvalidProtocolBufferException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					});
-				} catch (InvalidArgumentException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			});
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
 //			for(int i=0;i<4;i++) {
