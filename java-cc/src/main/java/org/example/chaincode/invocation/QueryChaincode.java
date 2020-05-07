@@ -141,9 +141,11 @@ public class QueryChaincode {
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+					System.out.println("Number of txn info count: "+txenin.getTransactionActionInfoCount());
 					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 						List<String> callArgs = new ArrayList<>();
 						// add list of arguments used when the chaincode was called
+						System.out.println("Chaincode name: "+actinfo.getChaincodeIDName());
 						for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
 							callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
 						}
@@ -179,7 +181,6 @@ public class QueryChaincode {
 									}
 								});
 								rwset.getRwset().getWritesList().forEach(write->{
-									System.out.println(write.getAllFields());
 									byte[] writeLen = new byte[write.getValue().size()];
 									write.getValue().copyTo(writeLen, 0);
 									String writeStr = new String(writeLen);
@@ -312,12 +313,12 @@ public class QueryChaincode {
 				return;
 			}
 			// get the keys written by this transaction...
-			System.out.println(getTxnInfoFromBlock(channel,usercontext,peer, tx_id));
+			getTxnInfoFromBlock(channel,usercontext,peer, tx_id);
 			TxnInfo first_txn = transactionMap.get(tx_id);
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
 			ccs.addAll(channel.getDiscoveredChaincodeNames());
-			System.out.println(ccs);
+			System.out.println("Chaincodes in the channel: "+ccs);
 //			for(int i=0;i<4;i++) {
 //				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
 //				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
