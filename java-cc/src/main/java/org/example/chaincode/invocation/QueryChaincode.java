@@ -68,6 +68,7 @@ public class QueryChaincode {
 	public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
     public static final String END_CERT = "\n-----END CERTIFICATE-----\n";
 	private static Map<String,TxnInfo> transactionMap = new HashMap<>();
+	private static List<String> ccs = new ArrayList<>();
 	// sort all transactions as according to the timestamp they were received in
 	private static Map<Long,TxnInfo> sortedMap = new TreeMap<>();
 	// write key set
@@ -137,7 +138,6 @@ public class QueryChaincode {
 		List<TxnInfo> listOfTransactions = new ArrayList<>();
 		try {
 			BlockInfo blk = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
-			QueryByChaincodeRequest q = QueryByChaincodeRequest.newInstance(usercontext);
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
@@ -316,6 +316,8 @@ public class QueryChaincode {
 			TxnInfo first_txn = transactionMap.get(tx_id);
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
+			ccs.addAll(channel.getDiscoveredChaincodeNames());
+			System.out.println(ccs);
 //			for(int i=0;i<4;i++) {
 //				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
 //				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
