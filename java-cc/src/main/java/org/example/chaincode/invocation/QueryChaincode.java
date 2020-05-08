@@ -239,6 +239,8 @@ public class QueryChaincode {
 									}
 									rwset.getRwset().getReadsList().forEach(x->{
 										// if this is not the first read
+										// if this is not the first read
+										System.out.println("Read for block number :"+blk.getBlockNumber());
 										System.out.println(x);
 										if(x.getVersion().getBlockNum() > 0L) {
 											TxnRead txnRead = new TxnRead(x.getKey(),x.getVersion().getBlockNum());
@@ -257,6 +259,8 @@ public class QueryChaincode {
 									});
 									rwset.getRwset().getWritesList().forEach(write->{
 										//System.out.println(write.getAllFields());'
+										System.out.println("Write for block number :"+blk.getBlockNumber());
+										System.out.println(write);
 										byte[] writeLen = new byte[write.getValue().size()];
 										write.getValue().copyTo(writeLen, 0);
 										// get all dependencies, re-execute all those transactions with the current 
