@@ -14,15 +14,11 @@ package org.example.chaincode.invocation;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -47,8 +43,6 @@ import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
-import org.hyperledger.fabric.sdk.ProposalResponse;
-import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
 import org.hyperledger.fabric.sdk.User;
 import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
 import org.hyperledger.fabric.sdk.exception.ProposalException;
@@ -148,6 +142,7 @@ public class QueryChaincode {
 						}
 						TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
 						txn_info.setBlockHeight(blk.getBlockNumber());
+						txn_info.setCreatorId(en.getCreator().getId());
 						// get list of endorsers
 						for(int j=0;j<actinfo.getEndorsementsCount();j++) {
 							String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());

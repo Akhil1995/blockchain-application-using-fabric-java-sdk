@@ -6,11 +6,12 @@ import java.util.List;
 public class TxnInfo {
 	private String txn_id;
 	private long timestamp;
-	private List<TxnRead> readlist;
-	private List<TxnWrite> writelist;
+	private List<TxnRead> reads;
+	private List<TxnWrite> writes;
 	private List<String> callArgs;
-	private List<String> endorserList;
+	private List<String> endorsers;
 	private String chaincode;
+	private String creatorId;
 	private long blockHeight;
 	
 	public long getBlockHeight() {
@@ -32,11 +33,11 @@ public class TxnInfo {
 	public TxnInfo(String txn_id, long timestamp, List<String> args,String chaincode) {
 		this.txn_id = txn_id;
 		this.timestamp = timestamp;
-		this.readlist = new ArrayList<>();
-		this.writelist = new ArrayList<>();
+		this.reads = new ArrayList<>();
+		this.writes = new ArrayList<>();
 		this.callArgs = new ArrayList<String>();
 		this.callArgs.addAll(args);
-		this.endorserList = new ArrayList<>();
+		this.endorsers = new ArrayList<>();
 		this.chaincode = chaincode;
 	}
 
@@ -65,32 +66,39 @@ public class TxnInfo {
 	}
 	
 	public List<String> getEndorserList() {
-		return endorserList;
+		return endorsers;
 	}
 
 	public void setEndorserList(List<String> endorserList) {
-		this.endorserList = endorserList;
+		this.endorsers = endorserList;
 	}
 	public List<TxnRead> getReadlist() {
-		return readlist;
+		return reads;
 	}
 
 	public void setReadlist(List<TxnRead> readlist) {
-		this.readlist = readlist;
+		this.reads = readlist;
 	}
 
 	public List<TxnWrite> getWritelist() {
-		return writelist;
+		return writes;
 	}
 
 	public void setWritelist(List<TxnWrite> writelist) {
-		this.writelist = writelist;
+		this.writes = writelist;
 	}
 
 	@Override
 	public String toString() {
-		return "TxnInfo [txn_id=" + txn_id + ", timestamp=" + timestamp + ", readlist=" + readlist + ", writelist="
-				+ writelist + ", callArgs=" + callArgs + ", endorserList=" + endorserList + ", chaincode=" + chaincode
+		return "TxnInfo [txn_id=" + txn_id + ", timestamp=" + timestamp + ", readlist=" + reads + ", writelist="
+				+ writes + ", callArgs=" + callArgs + ", endorserList=" + endorsers + ", chaincode=" + chaincode
 				+ ", blockHeight=" + blockHeight + "]";
+	}
+	public String getCreatorId() {
+		return creatorId;
+	}
+
+	public void setCreatorId(String creatorId) {
+		this.creatorId = creatorId;
 	}
 }
