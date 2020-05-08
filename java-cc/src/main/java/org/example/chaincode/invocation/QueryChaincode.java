@@ -142,7 +142,7 @@ public class QueryChaincode {
 						}
 						TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
 						txn_info.setBlockHeight(blk.getBlockNumber());
-						txn_info.setCreatorId(en.getCreator().getId());
+						txn_info.setCreatorId(parseCertificateOfEndorser(en.getCreator().getId()));
 						// get list of endorsers
 						for(int j=0;j<actinfo.getEndorsementsCount();j++) {
 							String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
