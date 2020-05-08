@@ -314,8 +314,7 @@ public class QueryChaincode {
 			getTxnInfoFromBlock(channel,usercontext,peer, tx_id);
 			TxnInfo first_txn = transactionMap.get(tx_id);
 			// get a list of keys for this transaction and get their history....
-			Queue<String> keyQueue = new LinkedList<>();
-//			for(int i=0;i<4;i++) {
+			//for(int i=0;i<4;i++) {
 //				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
 //				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 //					if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
@@ -357,7 +356,6 @@ public class QueryChaincode {
 // 			hashset for keeping track of keys that were already queried
 			Set<String> keySet = new HashSet<>();
 			first_txn.getWritelist().forEach(write->{
-				keyQueue.offer(write.getKey());
 				keySet.add(write.getKey());
 			});
 			long blockNumber = first_txn.getBlockHeight();
@@ -423,9 +421,10 @@ public class QueryChaincode {
 				});
 				//System.out.println("Read/write sets");
 			});
+			System.out.println(sortedMap);
 			String final_json= gson.toJson(finalList);
-			System.out.println(final_json);
-			System.out.println(writeTxnSet);
+			//System.out.println(final_json);
+			//System.out.println(writeTxnSet);
 			//System.out.println(transactionMap.values());
 			// order all transactions according to the given block order and timing, so as to figure out a chronological order
 			// to re-execute them
