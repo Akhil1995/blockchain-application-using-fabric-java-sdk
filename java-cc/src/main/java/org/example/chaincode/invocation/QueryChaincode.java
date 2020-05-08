@@ -225,53 +225,54 @@ public class QueryChaincode {
 									}
 								}
 								if(check) {
-									List<String> callArgs = new ArrayList<>();
-									// add list of arguments used when the chaincode was called
-									for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
-										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
-									}
-									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
-									txn_info.setBlockHeight(blk.getBlockNumber());
-									for(int j=0;j<actinfo.getEndorsementsCount();j++) {
-										String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
-										if(commonName != null)
-											txn_info.getEndorserList().add(commonName);
-									}
-									rwset.getRwset().getReadsList().forEach(x->{
-										// if this is not the first read
-										// if this is not the first read
-										System.out.println("Read for block number :"+blk.getBlockNumber());
-										System.out.println(x);
-										if(x.getVersion().getBlockNum() > 0L) {
-											TxnRead txnRead = new TxnRead(x.getKey(),x.getVersion().getBlockNum());
-											// if the value is already present in the cache, re use it
-											if(writeTxnSet.containsKey( txnRead.getKey()+txnRead.getBlockNumber())) {
-												txnRead.setValueRead(writeTxnSet.get(txnRead.getKey()+txnRead.getBlockNumber()).getValueWritten());
-											}
-											// Else, fetch the written value from the version block
-											else {
-												TxnWrite txnW= getWriteCorrespondingToRead(channel, peer, txnRead.getBlockNumber(), usercontext, x.getKey());
-												writeTxnSet.put(txnW.getKey()+txnW.getBlockNumber(),txnW);
-												txnRead.setValueRead(txnW.getValueWritten());
-											}
-											txn_info.getReadlist().add(txnRead);
-										}
-									});
-									rwset.getRwset().getWritesList().forEach(write->{
-										//System.out.println(write.getAllFields());'
-										System.out.println("Write for block number :"+blk.getBlockNumber());
-										System.out.println(write);
-										byte[] writeLen = new byte[write.getValue().size()];
-										write.getValue().copyTo(writeLen, 0);
-										// get all dependencies, re-execute all those transactions with the current 
-										// chaincode and state values, so as to update the state and change the transaction accordingly
-										keySet.add(write.getKey());
-										TxnWrite txnW = new TxnWrite(write.getKey(),blk.getBlockNumber());
-										txnW.setValueWritten(new String(writeLen));
-										txn_info.getWritelist().add(txnW);
-										writeTxnSet.put(write.getKey()+blk.getBlockNumber(),txnW);
-									});
-									sortedMap.put(txn_info.getTimestamp(), txn_info);
+//									List<String> callArgs = new ArrayList<>();
+//									// add list of arguments used when the chaincode was called
+//									for(int k=0;k<actinfo.getChaincodeInputArgsCount();k++) {
+//										callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
+//									}
+//									TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
+//									txn_info.setBlockHeight(blk.getBlockNumber());
+//									for(int j=0;j<actinfo.getEndorsementsCount();j++) {
+//										String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
+//										if(commonName != null)
+//											txn_info.getEndorserList().add(commonName);
+//									}
+//									rwset.getRwset().getReadsList().forEach(x->{
+//										// if this is not the first read
+//										// if this is not the first read
+//										System.out.println("Read for block number :"+blk.getBlockNumber());
+//										System.out.println(x);
+//										if(x.getVersion().getBlockNum() > 0L) {
+//											TxnRead txnRead = new TxnRead(x.getKey(),x.getVersion().getBlockNum());
+//											// if the value is already present in the cache, re use it
+//											if(writeTxnSet.containsKey( txnRead.getKey()+txnRead.getBlockNumber())) {
+//												txnRead.setValueRead(writeTxnSet.get(txnRead.getKey()+txnRead.getBlockNumber()).getValueWritten());
+//											}
+//											// Else, fetch the written value from the version block
+//											else {
+//												TxnWrite txnW= getWriteCorrespondingToRead(channel, peer, txnRead.getBlockNumber(), usercontext, x.getKey());
+//												writeTxnSet.put(txnW.getKey()+txnW.getBlockNumber(),txnW);
+//												txnRead.setValueRead(txnW.getValueWritten());
+//											}
+//											txn_info.getReadlist().add(txnRead);
+//										}
+//									});
+//									rwset.getRwset().getWritesList().forEach(write->{
+//										//System.out.println(write.getAllFields());'
+//										System.out.println("Write for block number :"+blk.getBlockNumber());
+//										System.out.println(write);
+//										byte[] writeLen = new byte[write.getValue().size()];
+//										write.getValue().copyTo(writeLen, 0);
+//										// get all dependencies, re-execute all those transactions with the current 
+//										// chaincode and state values, so as to update the state and change the transaction accordingly
+//										keySet.add(write.getKey());
+//										TxnWrite txnW = new TxnWrite(write.getKey(),blk.getBlockNumber());
+//										txnW.setValueWritten(new String(writeLen));
+//										txn_info.getWritelist().add(txnW);
+//										writeTxnSet.put(write.getKey()+blk.getBlockNumber(),txnW);
+//									});
+//									sortedMap.put(txn_info.getTimestamp(), txn_info);
+									getTxnInfoFromBlock(channel, usercontext, peer, txenin.getTransactionID());
 								}
 							} catch (InvalidProtocolBufferException e) {
 								// TODO Auto-generated catch block
