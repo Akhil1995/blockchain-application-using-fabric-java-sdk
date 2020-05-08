@@ -226,6 +226,7 @@ public class QueryChaincode {
 									callArgs.add(new String(actinfo.getChaincodeInputArgs(k)));
 								}
 								TxnInfo txn_info = new TxnInfo(txenin.getTransactionID(),txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
+								txn_info.setBlockHeight(blk.getBlockNumber());
 								for(int j=0;j<actinfo.getEndorsementsCount();j++) {
 									String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
 									if(commonName != null)
