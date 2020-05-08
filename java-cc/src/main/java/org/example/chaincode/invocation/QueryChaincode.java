@@ -160,6 +160,7 @@ public class QueryChaincode {
 								// big problem here is we need to know all the values that were read in a transaction
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
+									System.out.println(read);
 									if(read.getVersion().getBlockNum() > 0L) {
 										TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
 										// if the value is already present in the cache, re use it
@@ -235,6 +236,7 @@ public class QueryChaincode {
 									}
 									rwset.getRwset().getReadsList().forEach(x->{
 										// if this is not the first read
+										System.out.println(x);
 										if(x.getVersion().getBlockNum() > 0L) {
 											TxnRead txnRead = new TxnRead(x.getKey(),x.getVersion().getBlockNum());
 											// if the value is already present in the cache, re use it
