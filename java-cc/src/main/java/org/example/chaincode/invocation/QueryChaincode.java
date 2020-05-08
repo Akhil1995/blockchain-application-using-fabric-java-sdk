@@ -24,6 +24,9 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -75,11 +78,19 @@ public class QueryChaincode {
 		byte[] decodedCert = Base64.getMimeDecoder().decode(cert.replaceAll(BEGIN_CERT, "").replaceAll(END_CERT, ""));
 		try {
 			X509Certificate x509 = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(decodedCert));
-			//LdapName ldapDN = new LdapName(x509.getSubjectX500Principal().getName());
-//			for(Rdn rdn: ldapDN.getRdns()) {
-//			    System.out.println(rdn.getType() + " -> " + rdn.getValue());
-//			}
-			return x509.getSubjectX500Principal().getName();
+			try {
+				LdapName ldapDN = new LdapName(x509.getSubjectX500Principal().getName());
+				for(Rdn rdn: ldapDN.getRdns()) {
+					if(rdn.getType().equalsIgnoreCase("CN")) {
+						return (String)rdn.getValue();
+					}
+				    System.out.println(rdn.getType() + " -> " + rdn.getValue());
+				}
+			} catch (InvalidNameException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			//return x509.getSubjectX500Principal().getName();
 		} catch (CertificateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

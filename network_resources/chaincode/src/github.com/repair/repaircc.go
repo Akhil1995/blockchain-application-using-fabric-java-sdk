@@ -86,6 +86,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
         	return shim.Error(fmt.Sprintf("Role format not correct "))
 	}
 	fmt.Println(cert.Subject.CommonName)
+	
 	if cert.Subject.CommonName != args[0]{
 		return shim.Error(fmt.Sprintf("Certificate doesn't match given role, exiting immediately"))
 	}
