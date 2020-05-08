@@ -108,7 +108,6 @@ public class QueryChaincode {
 									if(write.getKey().equals(key)) {
 										byte[] writeLen = new byte[write.getValue().size()];
 										write.getValue().copyTo(writeLen, 0);
-										txnWrite.setChaincode(actinfo.getChaincodeIDName());
 										String writeStr = new String(writeLen);
 										txnWrite.setKey(key);
 										txnWrite.setBlockNumber(blk.getBlockNumber());
@@ -141,15 +140,14 @@ public class QueryChaincode {
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
 				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
-					System.out.println("Number of txn info count: "+txenin.getTransactionActionInfoCount());
 					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 						List<String> callArgs = new ArrayList<>();
 						// add list of arguments used when the chaincode was called
-						System.out.println("Chaincode name: "+actinfo.getChaincodeIDName());
 						for(int j=0;j<actinfo.getChaincodeInputArgsCount();j++) {
 							callArgs.add(new String(actinfo.getChaincodeInputArgs(j)));
 						}
 						TxnInfo txn_info = new TxnInfo(tx_id,txenin.getTimestamp().getTime(),callArgs,actinfo.getChaincodeIDName());
+						txn_info.setBlockHeight(blk.getBlockNumber());
 						// get list of endorsers
 						for(int j=0;j<actinfo.getEndorsementsCount();j++) {
 							String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
@@ -160,9 +158,6 @@ public class QueryChaincode {
 							try {
 								// add all reads/writes that happened to this 
 								// big problem here is we need to know all the values that were read in a transaction
-								//System.out.println(rwset.getRwset().getAllFields());
-								//System.out.println(rwset.getRwset().getRangeQueriesInfo(0).getAllFields());
-								//System.out.println(rwset.getRwset().getMetadataWritesList());
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
 									if(read.getVersion().getBlockNum() > 0L) {
@@ -317,8 +312,6 @@ public class QueryChaincode {
 			TxnInfo first_txn = transactionMap.get(tx_id);
 			// get a list of keys for this transaction and get their history....
 			Queue<String> keyQueue = new LinkedList<>();
-			ccs.addAll(channel.getDiscoveredChaincodeNames());
-			System.out.println("Chaincodes in the channel: "+ccs);
 //			for(int i=0;i<4;i++) {
 //				BlockInfo blk = channel.queryBlockByNumber(peer, i, usercontext);
 //				for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
@@ -358,55 +351,56 @@ public class QueryChaincode {
 //					}
 //				}
 //			}
-			// hashset for keeping track of keys that were already queried
+// 			hashset for keeping track of keys that were already queried
 			Set<String> keySet = new HashSet<>();
 			first_txn.getWritelist().forEach(write->{
 				keyQueue.offer(write.getKey());
+				keySet.add(write.getKey());
 			});
-			long blockNumber = 0;
-			while(!keyQueue.isEmpty()) {
-				String key = keyQueue.poll();
-				sArgs[1] = key;
-				keySet.add(key);
-				Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, fcnName, sArgs,usercontext);
-				String payload = null;
-				for (ProposalResponse pres : responsesQuery) {
-					String stringResponse = new String(pres.getChaincodeActionResponsePayload());
-					payload = stringResponse;
-					Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
-				}
-				String[] historyKeys = gson.fromJson(payload,String[].class);
-				HistoryDTO[] dtokeys = new HistoryDTO[historyKeys.length];
-				BlockInfo[] txInfo = new BlockInfo[historyKeys.length];
-				int iter = 0;
-				boolean checkForFirstTransaction = false;
-				for(String x:historyKeys) {
-					dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
-					// we do not need history of the key before our transaction, so query blocks only from then
-					if(checkForFirstTransaction) {
-						txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
-						if(blockNumber == 0) {
-							blockNumber = txInfo[iter].getBlockNumber();
-						}
-						List<TxnInfo> txnList = getTxnInfoFromBlock(channel,usercontext,peer, dtokeys[iter].getTx_id());
-						if(!txnList.isEmpty()) {
-							txnList.forEach(txn->txn.getWritelist().forEach(ws->{
-								// writes list is important, because it can trigger a chain state modification
-								if(!keySet.contains(ws.getKey())) {
-									keyQueue.offer(ws.getKey());
-									keySet.add(ws.getKey());
-								}
-							}));
-						}
-					}
-					else {
-						if(dtokeys[iter].getTx_id().equals(tx_id)) {
-							checkForFirstTransaction= true;
-						}
-					}
-					iter++;
-				}
-			}
+			long blockNumber = first_txn.getBlockHeight();
+//			while(!keyQueue.isEmpty()) {
+//				String key = keyQueue.poll();
+//				sArgs[1] = key;
+//				keySet.add(key);
+//				Collection<ProposalResponse>  responsesQuery = channelClient.queryByChainCode(ccName, fcnName, sArgs,usercontext);
+//				String payload = null;
+//				for (ProposalResponse pres : responsesQuery) {
+//					String stringResponse = new String(pres.getChaincodeActionResponsePayload());
+//					payload = stringResponse;
+//					Logger.getLogger(QueryChaincode.class.getName()).log(Level.INFO, stringResponse);
+//				}
+//				String[] historyKeys = gson.fromJson(payload,String[].class);
+//				HistoryDTO[] dtokeys = new HistoryDTO[historyKeys.length];
+//				BlockInfo[] txInfo = new BlockInfo[historyKeys.length];
+//				int iter = 0;
+//				boolean checkForFirstTransaction = false;
+//				for(String x:historyKeys) {
+//					dtokeys[iter] = gson.fromJson(x, HistoryDTO.class);
+//					// we do not need history of the key before our transaction, so query blocks only from then
+//					if(checkForFirstTransaction) {
+//						txInfo[iter] = channel.queryBlockByTransactionID(peer, dtokeys[iter].getTx_id(), usercontext);
+//						if(blockNumber == 0) {
+//							blockNumber = txInfo[iter].getBlockNumber();
+//						}
+//						List<TxnInfo> txnList = getTxnInfoFromBlock(channel,usercontext,peer, dtokeys[iter].getTx_id());
+//						if(!txnList.isEmpty()) {
+//							txnList.forEach(txn->txn.getWritelist().forEach(ws->{
+//								// writes list is important, because it can trigger a chain state modification
+//								if(!keySet.contains(ws.getKey())) {
+//									keyQueue.offer(ws.getKey());
+//									keySet.add(ws.getKey());
+//								}
+//							}));
+//						}
+//					}
+//					else {
+//						if(dtokeys[iter].getTx_id().equals(tx_id)) {
+//							checkForFirstTransaction= true;
+//						}
+//					}
+//					iter++;
+//				}
+//			}
 			for(long i=blockNumber;i<channel.queryBlockchainInfo().getHeight();i++) {
 				BlockInfo inf = channel.queryBlockByNumber(peer, i, usercontext);
 				pollBlocksForTxns(inf, keySet,channel,peer,usercontext);

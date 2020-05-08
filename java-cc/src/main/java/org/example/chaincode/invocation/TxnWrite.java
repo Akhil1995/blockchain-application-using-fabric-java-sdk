@@ -4,18 +4,10 @@ public class TxnWrite {
 	private String key;
 	private long blockNumber;
 	private String valueWritten;
-	private String chaincode;
-	public String getChaincode() {
-		return chaincode;
-	}
-	public void setChaincode(String chaincode) {
-		this.chaincode = chaincode;
-	}
 	
 	@Override
 	public String toString() {
-		return "TxnWrite [key=" + key + ", blockNumber=" + blockNumber + ", valueWritten=" + valueWritten
-				+ ", chaincode=" + chaincode + "]";
+		return "TxnWrite [key=" + key + ", blockNumber=" + blockNumber + ", valueWritten=" + valueWritten+"]";
 	}
 	public String getKey() {
 		return key;

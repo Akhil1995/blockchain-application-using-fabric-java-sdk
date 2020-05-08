@@ -11,7 +11,16 @@ public class TxnInfo {
 	private List<String> callArgs;
 	private List<String> endorserList;
 	private String chaincode;
+	private long blockHeight;
 	
+	public long getBlockHeight() {
+		return blockHeight;
+	}
+
+	public void setBlockHeight(long blockHeight) {
+		this.blockHeight = blockHeight;
+	}
+
 	public String getChaincode() {
 		return chaincode;
 	}
@@ -81,6 +90,7 @@ public class TxnInfo {
 	@Override
 	public String toString() {
 		return "TxnInfo [txn_id=" + txn_id + ", timestamp=" + timestamp + ", readlist=" + readlist + ", writelist="
-				+ writelist + ", callArgs=" + callArgs + ", endorserList=" + endorserList + "]";
+				+ writelist + ", callArgs=" + callArgs + ", endorserList=" + endorserList + ", chaincode=" + chaincode
+				+ ", blockHeight=" + blockHeight + "]";
 	}
 }
