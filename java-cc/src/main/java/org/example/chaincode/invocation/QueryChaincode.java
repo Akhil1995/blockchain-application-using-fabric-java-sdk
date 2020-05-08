@@ -160,6 +160,7 @@ public class QueryChaincode {
 								// big problem here is we need to know all the values that were read in a transaction
 								rwset.getRwset().getReadsList().forEach(read->{
 									// if this is not the first read
+									System.out.println("Read for block number :"+blk.getBlockNumber());
 									System.out.println(read);
 									if(read.getVersion().getBlockNum() > 0L) {
 										TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
@@ -177,6 +178,8 @@ public class QueryChaincode {
 									}
 								});
 								rwset.getRwset().getWritesList().forEach(write->{
+									System.out.println("Write for block number :"+blk.getBlockNumber());
+									System.out.println(write);
 									byte[] writeLen = new byte[write.getValue().size()];
 									write.getValue().copyTo(writeLen, 0);
 									String writeStr = new String(writeLen);
@@ -405,7 +408,7 @@ public class QueryChaincode {
 //					iter++;
 //				}
 //			}
-			for(long i=blockNumber;i<channel.queryBlockchainInfo().getHeight();i++) {
+			for(long i=1;i<channel.queryBlockchainInfo().getHeight();i++) {
 				BlockInfo inf = channel.queryBlockByNumber(peer, i, usercontext);
 				pollBlocksForTxns(inf, keySet,channel,peer,usercontext,first_txn.getChaincode());
 			}
