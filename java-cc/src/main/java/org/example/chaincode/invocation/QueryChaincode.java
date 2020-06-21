@@ -97,18 +97,60 @@ public class QueryChaincode {
 		}
 		return null;
 	}
+	private static void printBlockInfo(TransactionEnvelopeInfo txenin) {
+		for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
+			List<String> callArgs = new ArrayList<>();
+			// add list of arguments used when the chaincode was called
+			
+			// get list of endorsers
+			for(int j=0;j<actinfo.getEndorsementsCount();j++) {
+				String commonName = parseCertificateOfEndorser(actinfo.getEndorsementInfo(j).getId());
+			}
+			actinfo.getTxReadWriteSet().getNsRwsetInfos().forEach(rwset->{
+				try {
+					// add all reads/writes that happened to this 
+					// big problem here is we need to know all the values that were read in a transaction
+					rwset.getRwset().getReadsList().forEach(read->{
+						if(read.getVersion().getBlockNum() > 0L) {
+							TxnRead txnRead = new TxnRead(read.getKey(),read.getVersion().getBlockNum());
+							// if the value is already present in the cache, re use it
+							System.out.println(read);
+							if(writeTxnSet.containsKey( txnRead.getKey()+txnRead.getBlockNumber())) {
+								txnRead.setValueRead(writeTxnSet.get(txnRead.getKey()+txnRead.getBlockNumber()).getValueWritten());
+							}
+							// Else, fetch the written value from the version block
+							else {
+								//TxnWrite txnW= getWriteCorrespondingToRead(channel, peer, txnRead.getBlockNumber(), usercontext, read.getKey());
+							}
+						}
+					});
+					rwset.getRwset().getWritesList().forEach(write->{
+						byte[] writeLen = new byte[write.getValue().size()];
+						System.out.println(write);
+						write.getValue().copyTo(writeLen, 0);
+						String writeStr = new String(writeLen);
+					});
+				} catch (InvalidProtocolBufferException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			});
+		}
+	}
 	private static void printBlockchainInVariousMethods(Channel channel, Peer peer, User uc) throws ProposalException, InvalidArgumentException {
 		for(int i=0;i<channel.queryBlockchainInfo().getHeight();i++) {
 			BlockInfo blk = channel.queryBlockByNumber(i);
 			blk.getEnvelopeInfos().forEach(env->{
 				if(env.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) env;
+					printBlockInfo(txenin);
 				}
 			});
 			BlockInfo blk1 = channel.queryBlockByHash(blk.getDataHash());
 			blk1.getEnvelopeInfos().forEach(env->{
 				if(env.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) env;
+					printBlockInfo(txenin);
 				}
 			});
 		}
