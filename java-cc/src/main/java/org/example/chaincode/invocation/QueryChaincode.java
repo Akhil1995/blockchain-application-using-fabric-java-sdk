@@ -147,7 +147,7 @@ public class QueryChaincode {
 				}
 			});
 			try {
-				BlockInfo blk1 = channel.queryBlockByHash(blk.getDataHash());
+				BlockInfo blk1 = channel.queryBlockByHash(blk.getPreviousHash());
 				blk1.getEnvelopeInfos().forEach(env->{
 					if(env.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) env;
