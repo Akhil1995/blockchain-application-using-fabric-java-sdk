@@ -12,33 +12,27 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 var logger = shim.NewLogger("repaircc")
-
-type TxnRead struct {
-	key string
-	blockNumber uint64
-	valueRead string
-}
-type TxnWrite struct {
-	key string
-	blockNumber uint64
-	valueWritten string
-}
 type TxnInfo struct {
 	timestamp uint64
 	chaincode string
 	txn_id string
+	creatorId string
 	blockHeight uint64
-	callArgs []string
 	endorsers []string
-	reads []TxnRead
-	writes []TxnWrite
+	status bool
+	//reads []TxnRead
+	//writes []TxnWrite
 }
 type RepairProposal struct {
 	repairId string
 	txns TxnInfo[]
 	status bool
 }
+// SimpleChaincode example simple Chaincode implementation
+type SimpleChaincode struct {
+}
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response  {
+	repairContext = false
 	return shim.Success(nil)
 }
 
@@ -48,11 +42,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
 	function  =strings.ToLower(function)
 	// check role validity
-	var role []string
-	role = strings.Split(args[0],".")
-	//var err error
-	// check and map roles here
-	//serializedID,err  := stub.GetCreator()
 	mymap,err := stub.GetCreator()
 	if err != nil{
 		return shim.Error(err.Error())
@@ -87,9 +76,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	}
 	fmt.Println(cert.Subject.CommonName)
 	
-	if cert.Subject.CommonName != args[0]{
-		return shim.Error(fmt.Sprintf("Certificate doesn't match given role, exiting immediately"))
-	}
+	//if cert.Subject.CommonName != args[0]{
+		//return shim.Error(fmt.Sprintf("Certificate doesn't match given role, exiting immediately"))
+	//}
 	
 	/*id,_ := stub.GetCreator()
 	cert,err := x509.ParseCertificate(id)
@@ -99,35 +88,18 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	if len(role)!=2 {
 		return shim.Error(string(id))
 	}*/
-	if function == "addairbag" {
-		// Adds an airbag to the ledger
-		return t.addairbag(stub, args)
+	if function == "acceptrepair" {
+		// accepts a repair from a client
+		return t.acceptrepair(stub, cert.Subject.CommonName,rp_id,tx_id)
 	}
 
-	if function == "transferairbag" {
-		// transfers an airbag to another manufacturer
-		return t.transferairbag(stub, args)
+	if function == "initiaterepair" {
+		// initiates a repaor
+		return t.initiaterepair(stub, args)
 	}
-	if function == "mountairbag" {
-		// mounts an airbag into a car
-		return t.mountairbag(stub, args)
+	
+	if function == "queryrepair" {
+		return t.queryrepair(stub,args)
 	}
-
-	if function == "replaceairbag" {
-		// replaces an airbag in a car
-		return t.replaceairbag(stub, args)
-	}
-	if function == "recallairbag" {
-		// Recalls an airbag
-		return t.recallairbag(stub, args)
-	}
-	if function == "checkairbag" {
-		// Checks an airbag in a car
-		return t.checkairbag(stub, args)
-	}
-	if function == "query" {
-		// Checks an airbag in a car
-		return t.queryHistory(stub, args)
-	}
-	return shim.Error(fmt.Sprintf("Unknown action, check the first argument, must be one of 'addairbag', 'transferairbag','mountairbag','replaceairbag','recallairbag', or 'checkairbag'. But got: %v", function))
+	return shim.Error(fmt.Sprintf("Unknown action, check the first argument, must be one of 'acceptrepair', 'initiaterepair','queryrepair'. But got: %v", function))
 }

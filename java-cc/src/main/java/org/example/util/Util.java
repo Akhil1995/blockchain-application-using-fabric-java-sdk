@@ -143,12 +143,6 @@ public class Util {
 		return enrollment;
 	}
 
-	public static void cleanUp() {
-		String directoryPath = "users";
-		File directory = new File(directoryPath);
-		deleteDirectory(directory);
-	}
-
 	  public static boolean deleteDirectory(File dir) {
 	        if (dir.isDirectory()) {
 	            File[] children = dir.listFiles();

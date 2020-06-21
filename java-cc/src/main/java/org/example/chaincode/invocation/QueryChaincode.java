@@ -97,6 +97,22 @@ public class QueryChaincode {
 		}
 		return null;
 	}
+	private static void printBlockchainInVariousMethods(Channel channel, Peer peer, User uc) throws ProposalException, InvalidArgumentException {
+		for(int i=0;i<channel.queryBlockchainInfo().getHeight();i++) {
+			BlockInfo blk = channel.queryBlockByNumber(i);
+			blk.getEnvelopeInfos().forEach(env->{
+				if(env.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) env;
+				}
+			});
+			BlockInfo blk1 = channel.queryBlockByHash(blk.getDataHash());
+			blk1.getEnvelopeInfos().forEach(env->{
+				if(env.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) env;
+				}
+			});
+		}
+	}
 	private static TxnWrite getWriteCorrespondingToRead(Channel channel,Peer peer,long blockNumber,User usercontext, String key) {
 		final TxnWrite txnWrite = new TxnWrite();
 		try {
@@ -256,7 +272,6 @@ public class QueryChaincode {
 			adminUserContext.setMspId(Config.ORG1_MSP);
 			caClient.setAdminUserContext(adminUserContext);
 			adminUserContext = caClient.enrollAdminUser(Config.ADMIN, Config.ADMIN_PASSWORD);
-			
 			FabricClient fabClient = new FabricClient(adminUserContext);
 			
 			ChannelClient channelClient = fabClient.createChannelClient(Config.CHANNEL_NAME);
@@ -281,6 +296,7 @@ public class QueryChaincode {
 			first_txn.getWritelist().forEach(write->{
 				keySet.add(write.getKey());
 			});
+			printBlockchainInVariousMethods(channel,peer,usercontext);
 			long blockNumber = first_txn.getBlockHeight();
 			for(long i=blockNumber;i<channel.queryBlockchainInfo().getHeight();i++) {
 				BlockInfo inf = channel.queryBlockByNumber(peer, i, usercontext);
