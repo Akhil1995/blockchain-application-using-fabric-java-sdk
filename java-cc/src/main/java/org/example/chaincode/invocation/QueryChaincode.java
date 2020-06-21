@@ -146,13 +146,19 @@ public class QueryChaincode {
 					printBlockInfo(txenin);
 				}
 			});
-			BlockInfo blk1 = channel.queryBlockByHash(blk.getDataHash());
-			blk1.getEnvelopeInfos().forEach(env->{
-				if(env.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
-					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) env;
-					printBlockInfo(txenin);
-				}
-			});
+			try {
+				BlockInfo blk1 = channel.queryBlockByHash(blk.getDataHash());
+				blk1.getEnvelopeInfos().forEach(env->{
+					if(env.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
+						TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) env;
+						printBlockInfo(txenin);
+					}
+				});
+			}
+			catch(ProposalException | InvalidArgumentException e) {
+				// do nothing
+				System.out.println("print this");
+			}
 		}
 	}
 	private static TxnWrite getWriteCorrespondingToRead(Channel channel,Peer peer,long blockNumber,User usercontext, String key) {
@@ -201,8 +207,9 @@ public class QueryChaincode {
 		try {
 			BlockInfo blk = channel.queryBlockByTransactionID(peer, tx_id, usercontext);
 			for(EnvelopeInfo en: blk.getEnvelopeInfos()) {
-				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE && en.getTransactionID().equals(tx_id)) {
+				if(en.getType() == EnvelopeType.TRANSACTION_ENVELOPE) {
 					TransactionEnvelopeInfo txenin = (TransactionEnvelopeInfo) en;
+					printBlockInfo(txenin);
 					for(BlockInfo.TransactionEnvelopeInfo.TransactionActionInfo actinfo : txenin.getTransactionActionInfos()) {
 						List<String> callArgs = new ArrayList<>();
 						// add list of arguments used when the chaincode was called
