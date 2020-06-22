@@ -188,7 +188,7 @@ func (t *SimpleChaincode) addairbag(stub shim.ChaincodeStubInterface, args []str
 	resp:= stub.InvokeChaincode("sacc",ccArgs,"mychannel")
 	fmt.Printf("%s\n",resp.Message)
 	ccArgs1 := util.ToChaincodeArgs("set","complex",string(str))
-	resp1:= stub.InvokeChaincode("sacc",ccArgs1,"mychannel")
+	resp1:= stub.InvokeChaincode("acc",ccArgs1,"mychannel")
 	fmt.Printf("%s\n",resp1.Message)
     return shim.Success([]byte("Airbag successfully added"))
 }
